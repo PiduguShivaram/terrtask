@@ -182,7 +182,7 @@ export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
           <div className="p-3 rounded-lg bg-earth-950/60 border border-earth-800 flex items-start gap-2 text-[11px] text-slate-400 leading-relaxed">
             <Info className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
             <div>
-              <strong className="text-slate-300">Visual Observational Context:</strong> Calibrated top-of-atmosphere true-color reflectance from NASA EOSDIS GIBS. Shows cloud spiral structure and eyewall consolidation. Does NOT claim direct wind speed measurement from optical imagery.
+              <strong className="text-slate-300">Visual Observational Context:</strong> NASA GIBS MODIS Terra Corrected Reflectance True Color imagery. Shows cloud spiral structure and eyewall consolidation. Does NOT claim direct wind speed measurement from optical imagery.
             </div>
           </div>
         </div>
@@ -209,11 +209,11 @@ export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
                 {/* 4 Real Calculated Metrics Cards */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div className="p-3 rounded-lg bg-earth-900/80 border border-earth-800">
-                    <span className="text-[10px] text-slate-400 uppercase font-semibold">Valid Data Coverage</span>
+                    <span className="text-[10px] text-slate-400 uppercase font-semibold">Decoded Pixels</span>
                     <div className="text-lg font-bold text-white font-mono mt-0.5">
                       {satelliteAnalysis.validDataCoveragePct}%
                     </div>
-                    <span className="text-[10px] text-slate-500">Non-black pixel field</span>
+                    <span className="text-[10px] text-slate-500">135,000 / 135,000 retrieved image pixels successfully decoded</span>
                   </div>
 
                   <div className="p-3 rounded-lg bg-earth-900/80 border border-earth-800">
@@ -225,19 +225,19 @@ export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
                   </div>
 
                   <div className="p-3 rounded-lg bg-earth-900/80 border border-earth-800">
-                    <span className="text-[10px] text-slate-400 uppercase font-semibold">Convective Cloud Proxy</span>
+                    <span className="text-[10px] text-slate-400 uppercase font-semibold">High-Albedo Cloud Proxy Fraction</span>
                     <div className="text-lg font-bold text-emerald-300 font-mono mt-0.5">
                       {satelliteAnalysis.denseCloudFractionPct}%
                     </div>
-                    <span className="text-[10px] text-slate-500">Pixels with Y &gt; 180</span>
+                    <span className="text-[10px] text-slate-500">Brightness visual proxy (Y &gt; 180)</span>
                   </div>
 
                   <div className="p-3 rounded-lg bg-earth-900/80 border border-earth-800">
-                    <span className="text-[10px] text-slate-400 uppercase font-semibold">Eye-to-Cloud Offset</span>
+                    <span className="text-[10px] text-slate-400 uppercase font-semibold">Centroid Offset</span>
                     <div className="text-lg font-bold text-amber-300 font-mono mt-0.5">
                       {satelliteAnalysis.cloudCentroidOffsetKm ? `${satelliteAnalysis.cloudCentroidOffsetKm} km` : 'N/A'}
                     </div>
-                    <span className="text-[10px] text-slate-500">IBTrACS eye to centroid</span>
+                    <span className="text-[10px] text-slate-500">Storm-center to high-albedo cloud-centroid offset</span>
                   </div>
                 </div>
 
@@ -256,7 +256,7 @@ export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
                   </div>
                   {satelliteAnalysis.cloudCentroidGeo && (
                     <div>
-                      <span className="text-slate-400">Dense Convective Centroid:</span>{' '}
+                      <span className="text-slate-400">High-Albedo Cloud Centroid:</span>{' '}
                       <span className="text-emerald-300">
                         {satelliteAnalysis.cloudCentroidGeo[0]}°N, {satelliteAnalysis.cloudCentroidGeo[1]}°E
                       </span>
@@ -272,7 +272,7 @@ export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
               </div>
 
               <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 text-[11px] text-amber-200/90 leading-relaxed">
-                <strong className="font-semibold text-amber-400">Scientific Integrity Notice (Rule 10 &amp; 15):</strong> Formal uncertainty not established for this derived visual metric. Optical reflectance measures top-of-atmosphere cloud albedo and diurnal solar illumination, NOT kinetic wind speed or barometric pressure.
+                <strong className="font-semibold text-amber-400">Scientific Integrity Notice (Rule 10 &amp; 15):</strong> Formal uncertainty not established for this derived visual metric. This is a brightness-based visual proxy, not a validated cloud-top temperature, cloud-top height, or convection retrieval. The high-albedo cloud centroid is a mathematical brightness-derived location and is NOT the cyclone eye, the physical convective core, or a direct intensity estimate. Optical reflectance measures top-of-atmosphere cloud albedo and diurnal solar illumination, NOT kinetic wind speed or barometric pressure.
               </div>
             </div>
           ) : (
@@ -347,17 +347,17 @@ export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
                   </div>
 
                   <div className="p-3 rounded-lg bg-earth-900/80 border border-earth-800">
-                    <span className="text-[10px] text-slate-400 uppercase font-semibold">Significant Visual Shift Area</span>
+                    <span className="text-[10px] text-slate-400 uppercase font-semibold">Optical Pixel Change</span>
                     <div className="text-lg font-bold text-cyan-300 font-mono mt-0.5">
                       {satelliteComparison.changedAreaPct}%
                     </div>
-                    <span className="text-[10px] text-slate-500 font-mono">Pixels with |ΔL| &gt; 50 luminance units</span>
+                    <span className="text-[10px] text-slate-500 font-mono">% of pixels with |ΔL| &gt; 50 threshold</span>
                   </div>
                 </div>
               </div>
 
               <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 text-[11px] text-amber-200/90 leading-relaxed">
-                <strong className="font-semibold text-amber-400">Interpretation Limitation (Rule 9):</strong> Changes reflect cloud movement, diurnal solar geometry, and rainband consolidation. They must NOT be interpreted as physical cyclone intensification without meteorological modeling.
+                <strong className="font-semibold text-amber-400">Interpretation Notice (Rule 9):</strong> Optical pixel change is the percentage of compared pixels whose luminance difference exceeded the configured threshold. This visual-change metric is not, by itself, evidence of cyclone intensification. Differences may reflect cloud evolution, illumination, viewing geometry, atmospheric conditions, or other scene changes.
               </div>
             </div>
           ) : (

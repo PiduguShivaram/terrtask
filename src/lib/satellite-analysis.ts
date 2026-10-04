@@ -126,7 +126,7 @@ export async function analyzeSatelliteImage(
 
   let totalR = 0, totalG = 0, totalB = 0, totalLum = 0;
   let validPixels = 0;
-  let highReflectanceCloudPixels = 0; // Convective cloud proxy
+  let highReflectanceCloudPixels = 0; // High-albedo cloud proxy
 
   let sumWeightedX = 0, sumWeightedY = 0, sumCloudWeight = 0;
 
@@ -144,7 +144,7 @@ export async function analyzeSatelliteImage(
       const lum = 0.299 * r + 0.587 * g + 0.114 * b;
       totalLum += lum;
 
-      // Optical cloud threshold: deep convective clouds appear as high-albedo bright white (lum > 180)
+      // Optical cloud threshold: high-albedo clouds appear as bright white (lum > 180)
       if (lum > 180) {
         highReflectanceCloudPixels++;
         const pixelIdx = i / 4;
@@ -170,7 +170,7 @@ export async function analyzeSatelliteImage(
     stormCenterPixel = [cx, cy];
   }
 
-  // Cloud Centroid and Distance to Storm Center
+  // High-Albedo Cloud Centroid and Distance to Storm Center
   let cloudCentroidGeo: [number, number] | null = null;
   let cloudCentroidOffsetKm: number | null = null;
 
@@ -213,12 +213,12 @@ export async function analyzeSatelliteImage(
     cloudCentroidGeo,
     cloudCentroidOffsetKm,
     rawProcessingDetails: {
-      algorithm: 'Pure JavaScript RGB pixel luminance analysis (0.299R + 0.587G + 0.114B) with convective brightness threshold (> 180)',
+      algorithm: 'Pure JavaScript RGB pixel luminance analysis (0.299R + 0.587G + 0.114B) with high-albedo cloud threshold (> 180)',
       sourceVariables: ['Red', 'Green', 'Blue', 'IBTrACS Eye Coordinates'],
-      formula: 'Luminance Y = 0.299R + 0.587G + 0.114B; Centroid = Σ(P_i · w_i) / Σ(w_i)',
-      assumptions: 'True-color reflectance indicates cloud albedo; deep convective clouds produce high optical reflectance (>180/255).',
+      formula: 'Luminance Y = 0.299R + 0.587G + 0.114B; Centroid = Σ(P_i · w_i) / Σ(w_i); Distance = Haversine(IBTrACS Eye, High-Albedo Centroid)',
+      assumptions: 'This is a brightness-based visual proxy, not a validated cloud-top temperature, cloud-top height, or convection retrieval. The high-albedo cloud centroid is a mathematical brightness-derived location and is NOT the cyclone eye, the physical convective core, or a direct intensity estimate.',
     },
-    limitations: 'Satellite-derived visual proxy only. Optical RGB reflectance does NOT measure kinetic wind speed or barometric pressure.',
+    limitations: 'Satellite-derived visual proxy only. This is a brightness-based visual proxy, not a validated cloud-top temperature, cloud-top height, or convection retrieval. Optical RGB reflectance does NOT measure kinetic wind speed or barometric pressure.',
     sourceUrl: url,
   };
 }
@@ -277,7 +277,7 @@ export async function compareSatelliteImages(
     validPixelsCount: validPixels,
     meanAbsoluteDifference,
     changedAreaPct,
-    processing: 'Deterministic pixel-by-pixel absolute luminance difference (|L₂ - L₁|) across identical bounding box coordinates.',
-    limitations: 'Derived from optical image comparison. Changes reflect cloud advection, solar illumination geometry, and diurnal atmospheric conditions; they must NOT be interpreted as direct physical cyclone intensification.',
+    processing: 'Deterministic pixel-by-pixel absolute luminance difference (|L₂ - L₁|) across identical bounding box coordinates: percentage of compared pixels whose luminance difference exceeded the configured threshold (|ΔL| > 50).',
+    limitations: 'Optical pixel change: percentage of compared pixels whose luminance difference exceeded the configured threshold. This visual-change metric is not, by itself, evidence of cyclone intensification. Differences may reflect cloud evolution, illumination, viewing geometry, atmospheric conditions, or other scene changes.',
   };
 }

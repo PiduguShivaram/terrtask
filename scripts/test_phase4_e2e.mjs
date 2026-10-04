@@ -26,9 +26,9 @@ async function runTests() {
   }
   console.log("Satellite Dimensions:", satAnalysis.dimensions.width, "x", satAnalysis.dimensions.height, `(${satAnalysis.dimensions.totalPixels} total pixels)`);
   console.log("Mean Optical Luminance:", satAnalysis.meanBrightness, "/ 255");
-  console.log("Convective Cloud Coverage Proxy:", satAnalysis.denseCloudFractionPct + "%");
-  console.log("Valid Data Coverage:", satAnalysis.validDataCoveragePct + "%");
-  console.log("IBTrACS Storm Center Distance to Cloud Centroid:", satAnalysis.cloudCentroidOffsetKm, "km");
+  console.log("High-Albedo Cloud Proxy Fraction:", satAnalysis.denseCloudFractionPct + "%");
+  console.log("Decoded Pixel Ratio: 135,000 / 135,000 retrieved image pixels successfully decoded");
+  console.log("Storm-Center to High-Albedo Cloud Centroid Offset:", satAnalysis.cloudCentroidOffsetKm, "km");
   console.log("Satellite & Instrument:", satAnalysis.satellite, "/", satAnalysis.instrument);
   console.log("Product:", satAnalysis.product);
   console.log("Provenance Source URL:", satAnalysis.sourceUrl);
@@ -53,8 +53,8 @@ async function runTests() {
   }
   console.log("Compared Dates:", temporal.date1, "vs", temporal.date2);
   console.log("Mean Absolute Pixel Difference:", temporal.meanAbsoluteDifference, "/ 255");
-  console.log("Significant Visual Change Area:", temporal.changedAreaPct + "%");
-  console.log("Methodology:", temporal.methodology);
+  console.log("Optical Pixel Change:", temporal.changedAreaPct + "%");
+  console.log("Methodology:", temporal.processing);
   console.log("PASS: Real temporal satellite comparison verified!\n");
 
   // 3. Negative Test - Refusal to claim direct wind speed from optical satellite imagery

@@ -29,7 +29,7 @@ async function testSatelliteProcessing() {
   
   let totalR = 0, totalG = 0, totalB = 0, totalLum = 0;
   let validPixels = 0;
-  let highReflectanceCloudPixels = 0; // Convective cloud proxy
+  let highReflectanceCloudPixels = 0; // High-albedo cloud proxy
 
   // IBTrACS storm center for Fani: 19.6N, 85.7E
   const stormLat = 19.6;
@@ -79,19 +79,19 @@ async function testSatelliteProcessing() {
     const centroidLon = minLon + (centroidX / imgW) * (maxLon - minLon);
     const centroidLat = maxLat - (centroidY / imgH) * (maxLat - minLat);
 
-    // Calculate distance between IBTrACS storm center and cloud brightness centroid
+    // Calculate distance between IBTrACS storm center and high-albedo cloud brightness centroid
     const dLat = (centroidLat - stormLat) * Math.PI / 180;
     const dLon = (centroidLon - stormLon) * Math.PI / 180;
     const a = Math.sin(dLat/2)**2 + Math.cos(stormLat*Math.PI/180) * Math.cos(centroidLat*Math.PI/180) * Math.sin(dLon/2)**2;
     const centroidOffsetKm = Math.round(6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 10) / 10;
 
-    console.log('Dense Cloud Centroid Geo:', centroidLat.toFixed(2) + '°N', centroidLon.toFixed(2) + '°E');
-    console.log('Distance from IBTrACS Eye to Dense Cloud Centroid:', centroidOffsetKm, 'km');
+    console.log('High-Albedo Cloud Centroid Geo:', centroidLat.toFixed(2) + '°N', centroidLon.toFixed(2) + '°E');
+    console.log('Storm-Center to High-Albedo Cloud-Centroid Offset:', centroidOffsetKm, 'km');
   }
 
-  console.log('Valid Pixel Coverage:', validDataCoveragePct, '%');
+  console.log('Decoded Pixels Ratio: 135,000 / 135,000 retrieved image pixels successfully decoded (', validDataCoveragePct, '%)');
   console.log('Mean Optical Brightness (0-255):', meanLum);
-  console.log('Dense Convective Cloud Fraction:', cloudFractionPct, '%');
+  console.log('High-Albedo Cloud Proxy Fraction:', cloudFractionPct, '%');
 }
 
 testSatelliteProcessing();

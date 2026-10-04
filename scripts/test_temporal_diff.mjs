@@ -42,7 +42,7 @@ async function testTemporalDiff() {
   const changedAreaPct = Math.round((significantChangePixels / validPixels) * 1000) / 10;
 
   console.log('Mean Absolute Optical Difference (0-255):', meanAbsDiff);
-  console.log('Significantly Changed Visual Area (%):', changedAreaPct, '%');
+  console.log('Optical Pixel Change (%):', changedAreaPct, '%');
 }
 
 testTemporalDiff();
