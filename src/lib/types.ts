@@ -1,3 +1,5 @@
+import { SatelliteImageAnalysisResult, TemporalSatelliteComparisonResult } from './satellite-analysis';
+
 export type DataCategory = 
   | 'Observed' 
   | 'Derived' 
@@ -139,6 +141,8 @@ export interface TerraAskResult {
       | 'temporal_evolution' 
       | 'evidence_inspection' 
       | 'satellite_intensity_request'
+      | 'satellite_visual_analysis'
+      | 'satellite_comparison'
       | 'unsupported_forecast' 
       | 'unsupported_damage' 
       | 'unknown_or_unsupported';
@@ -163,7 +167,7 @@ export interface TerraAskResult {
   activePointIndex: number;
   targetLocationInfo?: ResolvedLocation | null;
   
-  // Synchronization & Imagery
+  // Synchronization & Satellite Analysis
   temporalSync: TemporalSynchronization;
   timelinePhases: TimelinePhase[];
   hourlyEnvironmentalData?: HourlyMetric[] | null;
@@ -179,6 +183,10 @@ export interface TerraAskResult {
     provider: string;
     roleDescription: string;
   };
+  
+  // Phase 4 Satellite Pixel Analysis & Comparison
+  satelliteAnalysis?: SatelliteImageAnalysisResult | null;
+  satelliteComparison?: TemporalSatelliteComparisonResult | null;
   
   errorState?: {
     isError: boolean;

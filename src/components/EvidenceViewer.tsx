@@ -2,7 +2,20 @@
 
 import React, { useState } from 'react';
 import { CycloneEvent, HourlyMetric } from '@/lib/types';
-import { Satellite, BarChart3, Table, ExternalLink, ShieldCheck, Info } from 'lucide-react';
+import { SatelliteImageAnalysisResult, TemporalSatelliteComparisonResult } from '@/lib/satellite-analysis';
+import { 
+  Satellite, 
+  BarChart3, 
+  Table, 
+  ExternalLink, 
+  ShieldCheck, 
+  Info, 
+  Sparkles, 
+  Cpu, 
+  Layers, 
+  ArrowRight,
+  Eye
+} from 'lucide-react';
 
 interface EvidenceViewerProps {
   storm: CycloneEvent | null;
@@ -11,6 +24,8 @@ interface EvidenceViewerProps {
   stationName?: string;
   activePointIndex: number;
   onSelectPoint: (index: number) => void;
+  satelliteAnalysis?: SatelliteImageAnalysisResult | null;
+  satelliteComparison?: TemporalSatelliteComparisonResult | null;
 }
 
 export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
@@ -20,24 +35,30 @@ export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
   stationName,
   activePointIndex,
   onSelectPoint,
+  satelliteAnalysis,
+  satelliteComparison,
 }) => {
-  const [activeTab, setActiveTab] = useState<'satellite' | 'chart' | 'table'>('satellite');
+  const [activeTab, setActiveTab] = useState<'satellite' | 'pixel_analysis' | 'comparison' | 'chart' | 'table'>('satellite');
   const [imageError, setImageError] = useState(false);
 
   if (!storm) return null;
 
-  // Real NASA GIBS Snapshot URL
+  // Real NASA GIBS Snapshot URL for active observation
   const minLon = 80.0;
   const minLat = 14.0;
   const maxLon = 92.0;
   const maxLat = 24.0;
   const snapshotUrl = `https://wvs.earthdata.nasa.gov/api/v1/snapshot?REQUEST=GetSnapshot&TIME=${satelliteDate}&BBOX=${minLat},${minLon},${maxLat},${maxLon}&CRS=EPSG:4326&LAYERS=MODIS_Terra_CorrectedReflectance_TrueColor,Coastlines_15m&WRAP=day,none&FORMAT=image/jpeg&WIDTH=900&HEIGHT=600`;
 
+  // Before date snapshot URL for temporal comparison
+  const beforeDate = satelliteComparison?.date1 || '2019-05-01';
+  const beforeSnapshotUrl = `https://wvs.earthdata.nasa.gov/api/v1/snapshot?REQUEST=GetSnapshot&TIME=${beforeDate}&BBOX=${minLat},${minLon},${maxLat},${maxLon}&CRS=EPSG:4326&LAYERS=MODIS_Terra_CorrectedReflectance_TrueColor,Coastlines_15m&WRAP=day,none&FORMAT=image/jpeg&WIDTH=450&HEIGHT=300`;
+
   return (
     <div className="p-5 lg:p-6 rounded-2xl bg-earth-900/90 border border-earth-800 shadow-xl space-y-4">
       {/* Tab Navigation */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-earth-800 pb-3">
-        <div className="flex items-center gap-1.5 p-1 bg-earth-950/80 rounded-xl border border-earth-800">
+        <div className="flex flex-wrap items-center gap-1.5 p-1 bg-earth-950/80 rounded-xl border border-earth-800">
           <button
             type="button"
             onClick={() => setActiveTab('satellite')}
@@ -48,7 +69,33 @@ export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
             }`}
           >
             <Satellite className="w-3.5 h-3.5" />
-            <span>NASA Satellite Observation</span>
+            <span>NASA Satellite</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('pixel_analysis')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+              activeTab === 'pixel_analysis'
+                ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/20'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Cpu className="w-3.5 h-3.5 text-cyan-300" />
+            <span>Pixel Analysis</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('comparison')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+              activeTab === 'comparison'
+                ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/20'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5 text-emerald-300" />
+            <span>Temporal Comparison</span>
           </button>
 
           <button
@@ -61,7 +108,7 @@ export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
             }`}
           >
             <BarChart3 className="w-3.5 h-3.5" />
-            <span>ERA5 Reanalysis Context</span>
+            <span>ERA5 Reanalysis</span>
           </button>
 
           <button
@@ -74,17 +121,17 @@ export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
             }`}
           >
             <Table className="w-3.5 h-3.5" />
-            <span>Raw NOAA Best-Track</span>
+            <span>Raw Best-Track</span>
           </button>
         </div>
 
         <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-mono">
           <ShieldCheck className="w-3.5 h-3.5" />
-          <span>Real Earth Observation Data</span>
+          <span>Real NASA &amp; NOAA Data</span>
         </div>
       </div>
 
-      {/* Tab 1: Real NASA Satellite Snapshot (Rule 8: Honestly Described) */}
+      {/* Tab 1: NASA Satellite Imagery (Visual Evidence) */}
       {activeTab === 'satellite' && (
         <div className="space-y-3">
           <div className="relative rounded-xl overflow-hidden border border-earth-800 bg-earth-950 aspect-video flex items-center justify-center">
@@ -115,7 +162,7 @@ export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
                     NASA Terra &bull; MODIS Corrected Reflectance (True Color)
                   </div>
                   <div className="text-[10px] text-slate-400 font-mono">
-                    Acquisition Date: <span className="text-cyan-300 font-bold">{satelliteDate}</span> &bull; 10:30 AM Local Overpass
+                    Observation Date: <span className="text-cyan-300 font-bold">{satelliteDate}</span> &bull; 10:30 AM Local Overpass (~05:00 UTC)
                   </div>
                 </div>
 
@@ -125,7 +172,7 @@ export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
                   rel="noreferrer"
                   className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-earth-950/85 backdrop-blur-md hover:bg-cyan-600 border border-earth-800 text-[11px] text-white font-medium flex items-center gap-1 transition-all"
                 >
-                  <span>Inspect in NASA Worldview</span>
+                  <span>Open in NASA Worldview</span>
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </>
@@ -135,19 +182,199 @@ export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
           <div className="p-3 rounded-lg bg-earth-950/60 border border-earth-800 flex items-start gap-2 text-[11px] text-slate-400 leading-relaxed">
             <Info className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
             <div>
-              <strong className="text-slate-300">Scientific Context (Rule 8):</strong> This calibrated true-color composite from NASA's Terra satellite provides visual observational evidence of cloud spiral organization, eye formation, and coastal proximity. TerraAsk does NOT perform automated wind speed measurements on RGB imagery.
+              <strong className="text-slate-300">Visual Observational Context:</strong> Calibrated top-of-atmosphere true-color reflectance from NASA EOSDIS GIBS. Shows cloud spiral structure and eyewall consolidation. Does NOT claim direct wind speed measurement from optical imagery.
             </div>
           </div>
         </div>
       )}
 
-      {/* Tab 2: ECMWF ERA5 Model Reanalysis Context (Rule 9: Reanalysis, Not Direct Station Sensor) */}
+      {/* Tab 2: PHASE 4 REAL SATELLITE PIXEL ANALYSIS */}
+      {activeTab === 'pixel_analysis' && (
+        <div className="space-y-4">
+          {satelliteAnalysis ? (
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl bg-earth-950 border border-earth-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Cpu className="w-4 h-4 text-cyan-400" />
+                    <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                      NASA GIBS Decoded Pixel Statistics ({satelliteAnalysis.dimensions.width} &times; {satelliteAnalysis.dimensions.height})
+                    </h4>
+                  </div>
+                  <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                    Satellite-derived
+                  </span>
+                </div>
+
+                {/* 4 Real Calculated Metrics Cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="p-3 rounded-lg bg-earth-900/80 border border-earth-800">
+                    <span className="text-[10px] text-slate-400 uppercase font-semibold">Valid Data Coverage</span>
+                    <div className="text-lg font-bold text-white font-mono mt-0.5">
+                      {satelliteAnalysis.validDataCoveragePct}%
+                    </div>
+                    <span className="text-[10px] text-slate-500">Non-black pixel field</span>
+                  </div>
+
+                  <div className="p-3 rounded-lg bg-earth-900/80 border border-earth-800">
+                    <span className="text-[10px] text-slate-400 uppercase font-semibold">Mean Optical Albedo</span>
+                    <div className="text-lg font-bold text-cyan-300 font-mono mt-0.5">
+                      {satelliteAnalysis.meanBrightness} <span className="text-xs text-slate-400 font-normal">/255</span>
+                    </div>
+                    <span className="text-[10px] text-slate-500">RGB Luminance Mean</span>
+                  </div>
+
+                  <div className="p-3 rounded-lg bg-earth-900/80 border border-earth-800">
+                    <span className="text-[10px] text-slate-400 uppercase font-semibold">Convective Cloud Proxy</span>
+                    <div className="text-lg font-bold text-emerald-300 font-mono mt-0.5">
+                      {satelliteAnalysis.denseCloudFractionPct}%
+                    </div>
+                    <span className="text-[10px] text-slate-500">Pixels with Y &gt; 180</span>
+                  </div>
+
+                  <div className="p-3 rounded-lg bg-earth-900/80 border border-earth-800">
+                    <span className="text-[10px] text-slate-400 uppercase font-semibold">Eye-to-Cloud Offset</span>
+                    <div className="text-lg font-bold text-amber-300 font-mono mt-0.5">
+                      {satelliteAnalysis.cloudCentroidOffsetKm ? `${satelliteAnalysis.cloudCentroidOffsetKm} km` : 'N/A'}
+                    </div>
+                    <span className="text-[10px] text-slate-500">IBTrACS eye to centroid</span>
+                  </div>
+                </div>
+
+                {/* Processing Details */}
+                <div className="p-3 rounded-lg bg-earth-900/60 border border-earth-800 text-[11px] text-slate-300 space-y-1.5 font-mono">
+                  <div>
+                    <span className="text-slate-400">Total Decoded Pixels:</span>{' '}
+                    <strong className="text-white">{satelliteAnalysis.dimensions.totalPixels.toLocaleString()}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400">Processing Algorithm:</span> {satelliteAnalysis.rawProcessingDetails.algorithm}
+                  </div>
+                  <div>
+                    <span className="text-slate-400">Luminance Formula:</span>{' '}
+                    <span className="text-cyan-300">{satelliteAnalysis.rawProcessingDetails.formula}</span>
+                  </div>
+                  {satelliteAnalysis.cloudCentroidGeo && (
+                    <div>
+                      <span className="text-slate-400">Dense Convective Centroid:</span>{' '}
+                      <span className="text-emerald-300">
+                        {satelliteAnalysis.cloudCentroidGeo[0]}°N, {satelliteAnalysis.cloudCentroidGeo[1]}°E
+                      </span>
+                    </div>
+                  )}
+                  {satelliteAnalysis.stormCenterPixel && (
+                    <div>
+                      <span className="text-slate-400">IBTrACS Eye Position on Grid:</span>{' '}
+                      <span>Pixel ({satelliteAnalysis.stormCenterPixel[0]}, {satelliteAnalysis.stormCenterPixel[1]})</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 text-[11px] text-amber-200/90 leading-relaxed">
+                <strong className="font-semibold text-amber-400">Scientific Integrity Notice (Rule 10 &amp; 15):</strong> Formal uncertainty not established for this derived visual metric. Optical reflectance measures top-of-atmosphere cloud albedo and diurnal solar illumination, NOT kinetic wind speed or barometric pressure.
+              </div>
+            </div>
+          ) : (
+            <div className="p-8 text-center text-xs text-slate-400 rounded-xl bg-earth-950 border border-earth-800">
+              Satellite pixel processing is currently unavailable for this observation date.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tab 3: PHASE 4 REAL TEMPORAL OVERPASS COMPARISON */}
+      {activeTab === 'comparison' && (
+        <div className="space-y-4">
+          {satelliteComparison ? (
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl bg-earth-950 border border-earth-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-emerald-400" />
+                    <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                      Deterministic Pixel Difference ({satelliteComparison.date1} vs {satelliteComparison.date2})
+                    </h4>
+                  </div>
+                  <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                    Satellite-derived
+                  </span>
+                </div>
+
+                {/* Side-by-Side Images */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px] font-mono">
+                      <span className="text-slate-300 font-semibold">T1: Before Landfall</span>
+                      <span className="text-cyan-400">{satelliteComparison.date1}</span>
+                    </div>
+                    <div className="rounded-lg overflow-hidden border border-earth-800 bg-earth-900 aspect-video">
+                      <img
+                        src={beforeSnapshotUrl}
+                        alt={`NASA MODIS Overpass ${satelliteComparison.date1}`}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    </div>
+                    <span className="text-[10px] text-slate-500 block">Maritime intensification stage</span>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px] font-mono">
+                      <span className="text-slate-300 font-semibold">T2: Selected Fix</span>
+                      <span className="text-cyan-400">{satelliteComparison.date2}</span>
+                    </div>
+                    <div className="rounded-lg overflow-hidden border border-earth-800 bg-earth-900 aspect-video">
+                      <img
+                        src={snapshotUrl}
+                        alt={`NASA MODIS Overpass ${satelliteComparison.date2}`}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    </div>
+                    <span className="text-[10px] text-slate-500 block">Landfall / coastal approach stage</span>
+                  </div>
+                </div>
+
+                {/* Real Deterministic Difference Statistics */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                  <div className="p-3 rounded-lg bg-earth-900/80 border border-earth-800">
+                    <span className="text-[10px] text-slate-400 uppercase font-semibold">Mean Absolute Difference (MAD)</span>
+                    <div className="text-lg font-bold text-amber-300 font-mono mt-0.5">
+                      {satelliteComparison.meanAbsoluteDifference} <span className="text-xs text-slate-400 font-normal">/255</span>
+                    </div>
+                    <span className="text-[10px] text-slate-500 font-mono">|L₂ - L₁| averaged over {satelliteComparison.validPixelsCount.toLocaleString()} pixels</span>
+                  </div>
+
+                  <div className="p-3 rounded-lg bg-earth-900/80 border border-earth-800">
+                    <span className="text-[10px] text-slate-400 uppercase font-semibold">Significant Visual Shift Area</span>
+                    <div className="text-lg font-bold text-cyan-300 font-mono mt-0.5">
+                      {satelliteComparison.changedAreaPct}%
+                    </div>
+                    <span className="text-[10px] text-slate-500 font-mono">Pixels with |ΔL| &gt; 50 luminance units</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 text-[11px] text-amber-200/90 leading-relaxed">
+                <strong className="font-semibold text-amber-400">Interpretation Limitation (Rule 9):</strong> Changes reflect cloud movement, diurnal solar geometry, and rainband consolidation. They must NOT be interpreted as physical cyclone intensification without meteorological modeling.
+              </div>
+            </div>
+          ) : (
+            <div className="p-8 text-center text-xs text-slate-400 rounded-xl bg-earth-950 border border-earth-800">
+              No matching secondary satellite observation available for temporal difference calculation.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tab 4: ECMWF ERA5 Context */}
       {activeTab === 'chart' && (
         <div className="space-y-3">
           <div className="p-3 rounded-lg bg-earth-950/60 border border-earth-800 flex items-start gap-2 text-[11px] text-slate-400 leading-relaxed">
             <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
             <div>
-              <strong className="text-amber-300">Model-Based Reanalysis Notice (Rule 9):</strong> ERA5 is a 0.25° gridded (~28 km) atmospheric reanalysis model assimilating global weather data. It is displayed as regional atmospheric context and must NOT be confused with direct eye-wall station barometers or anemometer readings.
+              <strong className="text-amber-300">Model-Based Reanalysis Notice:</strong> ERA5 is a 0.25° gridded atmospheric reanalysis model assimilating global weather data. It is displayed as regional atmospheric context and must NOT be confused with direct eye-wall station barometers.
             </div>
           </div>
 
@@ -207,18 +434,13 @@ export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
 
                   return (
                     <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible">
-                      {/* Grid Lines */}
                       <line x1={padding} y1={padding} x2={width - padding} y2={padding} stroke="#1e293b" strokeDasharray="3,3" />
                       <line x1={padding} y1={height / 2} x2={width - padding} y2={height / 2} stroke="#1e293b" strokeDasharray="3,3" />
                       <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="#334155" />
 
-                      {/* Pressure Line (Amber) */}
                       <polyline fill="none" stroke="#f59e0b" strokeWidth="2.5" points={pPoints} />
-
-                      {/* Wind Speed Line (Cyan) */}
                       <polyline fill="none" stroke="#06b6d4" strokeWidth="2" strokeDasharray="4,2" points={wPoints} />
 
-                      {/* Axis Labels */}
                       <text x={padding} y={padding - 8} fill="#f59e0b" fontSize="10" fontFamily="monospace">
                         {maxP} hPa
                       </text>
@@ -241,7 +463,7 @@ export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
         </div>
       )}
 
-      {/* Tab 3: Raw NOAA Best-Track Observations (Auditable Table) */}
+      {/* Tab 5: Raw NOAA Best-Track Observations */}
       {activeTab === 'table' && (
         <div className="space-y-2">
           <div className="max-h-72 overflow-y-auto rounded-xl border border-earth-800 bg-earth-950">
