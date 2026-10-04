@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'TerraAsk — Ask Earth What is Changing | Climate Intelligence Interface',
+  title: 'TerraTask — Ask Earth What is Changing | Climate Intelligence Interface',
   description:
     'Natural-language climate intelligence interface backed by verified NOAA IBTrACS tropical cyclone tracks, NASA GIBS satellite imagery, and ECMWF ERA5 reanalysis.',
   keywords: [
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     'ECMWF ERA5',
     'Odisha coastal resilience',
   ],
-  authors: [{ name: 'TerraAsk Intelligence Team' }],
+  authors: [{ name: 'TerraTask Intelligence Team' }],
 };
 
 export default function RootLayout({

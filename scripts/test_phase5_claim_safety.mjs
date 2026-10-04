@@ -96,7 +96,7 @@ const NEGATIVE_TESTS = [
 ];
 
 async function main() {
-  console.log("=== TERRAASK PHASE 5 — CLAIM SAFETY & NEGATIVE TEST SUITE ===\n");
+  console.log("=== TERRATASK PHASE 5 — CLAIM SAFETY & NEGATIVE TEST SUITE ===\n");
   let passed = 0;
 
   for (const test of NEGATIVE_TESTS) {

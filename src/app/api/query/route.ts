@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { processTerraAskQuery } from '@/lib/ai-pipeline';
+import { processTerraTaskQuery } from '@/lib/ai-pipeline';
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const result = await processTerraAskQuery(query.trim(), stormSid);
+    const result = await processTerraTaskQuery(query.trim(), stormSid);
     return NextResponse.json(result);
   } catch (error) {
     console.error('API query processing error:', error);

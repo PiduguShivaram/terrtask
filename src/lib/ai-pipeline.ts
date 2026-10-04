@@ -1,5 +1,5 @@
 import { 
-  TerraAskResult, 
+  TerraTaskResult, 
   EvidenceItem, 
   ProvenanceRecord, 
   TimelinePhase, 
@@ -47,7 +47,7 @@ const OUT_OF_SCOPE_TERMS = [
  * - fabricated confidence or statistical precision
  * - simultaneous observation claims without timestamp support
  */
-function runClaimSafetyPass(result: TerraAskResult): TerraAskResult {
+function runClaimSafetyPass(result: TerraTaskResult): TerraTaskResult {
   const sanitizeText = (text: string): string => {
     let s = text;
     // Rule 8: No fabricated confidence
@@ -126,17 +126,17 @@ function runClaimSafetyPass(result: TerraAskResult): TerraAskResult {
 }
 
 /**
- * Task-Aware Natural Language Climate Intelligence Pipeline for TerraAsk — Phase 5.
+ * Task-Aware Natural Language Climate Intelligence Pipeline for TerraTask — Phase 5.
  * Features:
  * - Real NOAA IBTrACS v04r01 best-track records
  * - Real NASA GIBS MODIS Terra pixel decoding (135,000 pixels) & temporal overpass comparison
  * - Real ECMWF ERA5 4D-Var gridded atmospheric reanalysis
  * - Evidence-Synthesized Decision Answer Layer (Rules 5, 17, 18, 19, 21)
  */
-export async function processTerraAskQuery(
+export async function processTerraTaskQuery(
   query: string, 
   forcedStormSid?: string
-): Promise<TerraAskResult> {
+): Promise<TerraTaskResult> {
   const normalizedQuery = query.toLowerCase().trim();
 
   // 1. NEGATIVE TEST: Future Forecast or Prediction Request (Rule 14)
@@ -157,7 +157,7 @@ export async function processTerraAskQuery(
 
   if (isForecastRequest) {
     const decisionAnswer: StructuredDecisionAnswer = {
-      directAnswer: 'This prototype does not currently provide a validated 24-hour forecast. TerraAsk provides validated historical Earth-observation analysis and does not generate predictive cyclone forecasts or forward trajectory cones.',
+      directAnswer: 'This prototype does not currently provide a validated 24-hour forecast. TerraTask provides validated historical Earth-observation analysis and does not generate predictive cyclone forecasts or forward trajectory cones.',
       whatHappened: 'No forward numerical weather prediction (NWP) simulation or dynamical ensemble was executed.',
       where: 'North Indian Ocean basin (Bay of Bengal and Arabian Sea).',
       when: 'Historical observational archive (1982 to present).',
@@ -169,7 +169,7 @@ export async function processTerraAskQuery(
       ],
     };
 
-    const res: TerraAskResult = {
+    const res: TerraTaskResult = {
       query,
       intent: { type: 'unsupported_forecast', requestedOperation: 'forecast' },
       assessment: decisionAnswer.directAnswer,
@@ -178,7 +178,7 @@ export async function processTerraAskQuery(
       derivedAnalysis: 'No forward dynamical simulation was run. Forecast track cones require numerical weather prediction (NWP) ensembles.',
       limitations: decisionAnswer.whatCannotBeDetermined,
       evidence: [],
-      reasoning: 'TerraAsk enforces a strict zero-speculation policy. Dynamical numerical weather prediction (NWP) model outputs are not indexed in this historical observation node.',
+      reasoning: 'TerraTask enforces a strict zero-speculation policy. Dynamical numerical weather prediction (NWP) model outputs are not indexed in this historical observation node.',
       uncertainty: {
         hasQuantitativeUncertainty: false,
         statement: 'Quantitative uncertainty unavailable for this observation.',
@@ -212,7 +212,7 @@ export async function processTerraAskQuery(
       errorState: {
         isError: true,
         reason: 'Forecast and predictive modeling are outside the current validated capability of this prototype.',
-        missingRequirement: 'The active TerraAsk prototype is designed for historical observation verification, temporal evolution analysis, and evidence-backed climate audits.',
+        missingRequirement: 'The active TerraTask prototype is designed for historical observation verification, temporal evolution analysis, and evidence-backed climate audits.',
       },
     };
     return runClaimSafetyPass(res);
@@ -229,7 +229,7 @@ export async function processTerraAskQuery(
     normalizedQuery.includes('infrastructure')
   ) {
     const decisionAnswer: StructuredDecisionAnswer = {
-      directAnswer: 'The current prototype does not have a validated building-damage or exposure model. TerraAsk does not evaluate structural building damage, casualties, or economic loss because it lacks cadastral asset inventories and structural engineering fragility curves.',
+      directAnswer: 'The current prototype does not have a validated building-damage or exposure model. TerraTask does not evaluate structural building damage, casualties, or economic loss because it lacks cadastral asset inventories and structural engineering fragility curves.',
       whatHappened: 'Meteorological Earth observations are active, but structural exposure and vulnerability models are not integrated.',
       where: 'North Indian Ocean coastal sectors.',
       when: 'Historical observational archive.',
@@ -240,7 +240,7 @@ export async function processTerraAskQuery(
       ],
     };
 
-    const res: TerraAskResult = {
+    const res: TerraTaskResult = {
       query,
       intent: { type: 'unsupported_damage', requestedOperation: 'damage_assessment' },
       assessment: decisionAnswer.directAnswer,
@@ -283,7 +283,7 @@ export async function processTerraAskQuery(
       errorState: {
         isError: true,
         reason: 'Asset exposure and structural damage models are not integrated.',
-        missingRequirement: 'TerraAsk currently supports meteorological and Earth-observation verification (wind speeds, track coordinates, central pressure, satellite reflectance overpasses).',
+        missingRequirement: 'TerraTask currently supports meteorological and Earth-observation verification (wind speeds, track coordinates, central pressure, satellite reflectance overpasses).',
       },
     };
     return runClaimSafetyPass(res);
@@ -303,7 +303,7 @@ export async function processTerraAskQuery(
         ],
       };
 
-      const res: TerraAskResult = {
+      const res: TerraTaskResult = {
         query,
         intent: { type: 'unknown_or_unsupported' },
         assessment: decisionAnswer.directAnswer,
@@ -824,7 +824,7 @@ export async function processTerraAskQuery(
       when: 'Hourly historical reanalysis archive.',
       howStrong: `ERA5 provides regional contextual surface pressure (${reanalysis?.minPressureHpa ?? 'regional'} hPa) and wind fields; it does not resolve localized peak eyewall gradient winds measured by in-situ surface stations.`,
       whatSatelliteShows: 'ERA5 assimilates satellite radiances, radiosondes, and ground stations, but the output itself is a synthesized numerical model product.',
-      supportingEvidenceSummary: 'Classified as Model-based context under the TerraAsk evidence taxonomy.',
+      supportingEvidenceSummary: 'Classified as Model-based context under the TerraTask evidence taxonomy.',
       whatCannotBeDetermined: [
         'ERA5 does not provide localized direct in-situ station observations.',
         'ERA5 0.25° resolution cannot resolve extreme peak eyewall wind gusts or exact central minimum barometric pressure.',
@@ -967,6 +967,7 @@ export async function processTerraAskQuery(
         displayUnit: 'cyclones',
         source: 'Derived from NOAA IBTrACS coordinates',
         dataset: 'Calculated internally via Haversine great-circle formula',
+        timestamp: `${closest.closestFixTime} UTC`,
         processing: `Ranked ${sortedRelevant.length} cyclones approaching within search radius of ${locName}.`,
         description: topClosestSummary,
       },
@@ -1043,6 +1044,7 @@ export async function processTerraAskQuery(
       rawEvidenceItems.find(e => e.id === 'ev-satellite-centroid-offset')!,
       rawEvidenceItems.find(e => e.id === 'ev-ibtracs-point')!,
       rawEvidenceItems.find(e => e.id === 'ev-wind-intensity')!,
+      rawEvidenceItems.find(e => e.id === 'ev-pressure')!,
     ].filter(Boolean);
 
     reasoning = `1. Pixel difference: Evaluated absolute luminance difference across 135,000 valid pixels between overpasses on ${beforeDate} and ${obsDate}.\n2. Optical pixel change: ${satelliteComparison?.changedAreaPct ?? '70.1'}% of compared pixels exceeded the difference threshold (|ΔL| > 50).\n3. Scientific notice: This visual-change metric is not, by itself, evidence of cyclone intensification. Differences may reflect cloud evolution, illumination, viewing geometry, atmospheric conditions, or other scene changes.`;
@@ -1114,7 +1116,7 @@ export async function processTerraAskQuery(
       howStrong: `Observed ${activePoint.windKts} kt sustained winds, ${activePoint.pressureHpa} hPa central pressure (${imdCategory}).`,
       whatSatelliteShows: `NASA MODIS Terra True Color imagery provides visual evidence of cloud structure (${satelliteAnalysis?.denseCloudFractionPct ?? '45.1'}% high-albedo cloud coverage); it serves as contextual visual evidence and is NOT the sensor source of wind or pressure.`,
       whatChangedOverTime: `Optical pixel change of ${satelliteComparison?.changedAreaPct ?? '70.1'}% between overpasses, reflecting cloud shield displacement.`,
-      supportingEvidenceSummary: `Categorized under TerraAsk taxonomy into Observed (IBTrACS fixes, wind, pressure, radii), Derived (Haversine velocity, high-albedo cloud fraction, centroid offset, pixel difference), and Model-based (ECMWF ERA5).`,
+      supportingEvidenceSummary: `Categorized under TerraTask taxonomy into Observed (IBTrACS fixes, wind, pressure, radii), Derived (Haversine velocity, high-albedo cloud fraction, centroid offset, pixel difference), and Model-based (ECMWF ERA5).`,
       whatCannotBeDetermined: [
         'Optical satellite imagery does NOT measure kinetic wind vectors or barometric pressure directly.',
         'ERA5 is a 0.25° gridded model reanalysis and does not resolve peak sub-grid eyewall winds.',
@@ -1206,7 +1208,7 @@ export async function processTerraAskQuery(
       dataset: 'Global Imagery Browse Services (GIBS) / MODIS Terra Corrected Reflectance',
       observationTime: `${obsDate}T10:30:00Z local (~05:00 UTC)`,
       geographicCoverage: 'Bay of Bengal [80°E, 14°N to 92°E, 24°N]',
-      processingPerformed: 'NASA GIBS MODIS Terra Corrected Reflectance True Color imagery. Processed by TerraAsk via pure JavaScript pixel luminance and high-albedo cloud centroid calculations.',
+      processingPerformed: 'NASA GIBS MODIS Terra Corrected Reflectance True Color imagery. Processed by TerraTask via pure JavaScript pixel luminance and high-albedo cloud centroid calculations.',
       citationUrl: 'https://www.earthdata.nasa.gov/eosdis/science-system-description/eosdis-components/gibs',
     },
     {
@@ -1259,7 +1261,7 @@ export async function processTerraAskQuery(
     limitations: decisionAnswer.whatCannotBeDetermined,
   };
 
-  const finalResult: TerraAskResult = {
+  const finalResult: TerraTaskResult = {
     query,
     intent: {
       type: intentType,

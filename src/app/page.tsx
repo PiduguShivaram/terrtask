@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { TerraAskHeader } from '@/components/TerraAskHeader';
+import { TerraTaskHeader } from '@/components/TerraTaskHeader';
 import { NaturalLanguagePrompt } from '@/components/NaturalLanguagePrompt';
 import { AnswerCard } from '@/components/AnswerCard';
 import { TimelineControl } from '@/components/TimelineControl';
 import { EvidenceViewer } from '@/components/EvidenceViewer';
 import { RelevantStormsSelector } from '@/components/RelevantStormsSelector';
 import { TruthfulState } from '@/components/TruthfulState';
-import { TerraAskResult } from '@/lib/types';
+import { TerraTaskResult } from '@/lib/types';
 import { extractDateString } from '@/lib/gibs';
 import { Loader2, Compass, AlertCircle } from 'lucide-react';
 
@@ -24,9 +24,9 @@ const Map = dynamic(() => import('@/components/Map').then((m) => m.Map), {
   ),
 });
 
-export default function TerraAskHome() {
+export default function TerraTaskHome() {
   const [currentQuery, setCurrentQuery] = useState('What is happening near Puri?');
-  const [result, setResult] = useState<TerraAskResult | null>(null);
+  const [result, setResult] = useState<TerraTaskResult | null>(null);
   const [activePointIndex, setActivePointIndex] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -48,11 +48,11 @@ export default function TerraAskHome() {
         throw new Error(`Earth-Observation Service error (${res.status})`);
       }
 
-      const data: TerraAskResult = await res.json();
+      const data: TerraTaskResult = await res.json();
       setResult(data);
       setActivePointIndex(data.activePointIndex ?? 0);
     } catch (err) {
-      console.error('Failed to execute TerraAsk query:', err);
+      console.error('Failed to execute TerraTask query:', err);
       setApiError(err instanceof Error ? err.message : 'Unknown communication error');
     } finally {
       setIsLoading(false);
@@ -72,7 +72,7 @@ export default function TerraAskHome() {
 
   return (
     <div className="min-h-screen flex flex-col bg-earth-950 text-slate-100">
-      <TerraAskHeader />
+      <TerraTaskHeader />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-6 space-y-6">
         {/* Natural Language Interface */}
@@ -205,7 +205,7 @@ export default function TerraAskHome() {
       <footer className="border-t border-earth-800 bg-earth-950 px-4 lg:px-8 py-6 mt-12 text-xs text-slate-400">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-white">TerraAsk</span>
+            <span className="font-bold text-white">TerraTask</span>
             <span className="text-slate-600">&bull;</span>
             <span>Real Earth-Observation Intelligence Engine</span>
           </div>

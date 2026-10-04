@@ -161,7 +161,7 @@ export type QueryIntentType =
   | 'unsupported_damage' 
   | 'unknown_or_unsupported';
 
-export interface TerraAskResult {
+export interface TerraTaskResult {
   query: string;
   intent: {
     type: QueryIntentType;

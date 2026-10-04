@@ -128,7 +128,7 @@ const DEMO_TESTS = [
 ];
 
 async function main() {
-  console.log("=== TERRAASK PHASE 5 — DEMO ANSWERS TEST SUITE ===\n");
+  console.log("=== TERRATASK PHASE 5 — DEMO ANSWERS TEST SUITE ===\n");
   let passed = 0;
 
   for (const test of DEMO_TESTS) {

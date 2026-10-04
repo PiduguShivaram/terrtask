@@ -3,7 +3,7 @@
 import React from 'react';
 import { Globe, Database, ShieldCheck, Waves, Satellite } from 'lucide-react';
 
-export const TerraAskHeader: React.FC = () => {
+export const TerraTaskHeader: React.FC = () => {
   return (
     <header className="border-b border-earth-800 bg-earth-950/80 backdrop-blur-md sticky top-0 z-50 px-4 lg:px-8 py-3.5">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -14,13 +14,13 @@ export const TerraAskHeader: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xl font-bold tracking-tight text-white">TerraAsk</span>
+              <span className="text-xl font-bold tracking-tight text-white">TerraTask</span>
               <span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
                 Earth Intelligence
               </span>
             </div>
             <p className="text-xs text-slate-400 font-medium">
-              Ask Earth what is changing. Real satellite &amp; geospatial observations.
+              TerraTask turns real satellite and geospatial evidence into explainable answers.
             </p>
           </div>
         </div>

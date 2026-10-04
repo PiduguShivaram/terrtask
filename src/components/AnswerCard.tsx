@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { TerraAskResult, DataCategory, EvidenceItem } from '@/lib/types';
+import { TerraTaskResult, DataCategory, EvidenceItem } from '@/lib/types';
 import { 
   ExternalLink, 
   ShieldAlert, 
@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 
 interface AnswerCardProps {
-  result: TerraAskResult;
+  result: TerraTaskResult;
 }
 
 export const AnswerCard: React.FC<AnswerCardProps> = ({ result }) => {
@@ -350,12 +350,12 @@ export const AnswerCard: React.FC<AnswerCardProps> = ({ result }) => {
         </div>
       )}
 
-      {/* 6. WHAT TERRAASK CANNOT DETERMINE (LIMITATIONS - Rule 19 Hierarchy) */}
+      {/* 6. WHAT TERRATASK CANNOT DETERMINE (LIMITATIONS - Rule 19 Hierarchy) */}
       <div className="p-6 rounded-2xl bg-earth-900/80 border border-amber-500/30 shadow-xl space-y-3">
         <div className="flex items-center gap-2">
           <ShieldAlert className="w-4 h-4 text-amber-400" />
           <h3 className="text-xs uppercase tracking-widest font-bold text-amber-400">
-            What TerraAsk Cannot Determine (Limitations)
+            What TerraTask Cannot Determine (Limitations)
           </h3>
         </div>
 

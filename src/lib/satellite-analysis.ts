@@ -58,6 +58,17 @@ async function fetchAndDecodeGibsSnapshot(date: string, bbox = DEFAULT_BBOX): Pr
   decoded: { data: Uint8Array; width: number; height: number };
   url: string;
 } | null> {
+  // Date format & mission operational timeline validation (MODIS Terra operations: 2000-02-24 to present)
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    console.warn(`Invalid satellite observation date format: "${date}"`);
+    return null;
+  }
+  const year = parseInt(date.slice(0, 4), 10);
+  if (year < 2000 || year > new Date().getUTCFullYear()) {
+    console.warn(`Requested satellite date ${date} is outside NASA MODIS Terra operational mission lifetime (2000-present).`);
+    return null;
+  }
+
   const [minLon, minLat, maxLon, maxLat] = bbox;
   const url = `https://wvs.earthdata.nasa.gov/api/v1/snapshot?REQUEST=GetSnapshot&TIME=${date}&BBOX=${minLat},${minLon},${maxLat},${maxLon}&CRS=EPSG:4326&LAYERS=MODIS_Terra_CorrectedReflectance_TrueColor,Coastlines_15m&WRAP=day,none&FORMAT=image/jpeg&WIDTH=${ANALYSIS_WIDTH}&HEIGHT=${ANALYSIS_HEIGHT}`;
 
@@ -96,7 +107,8 @@ async function fetchAndDecodeGibsSnapshot(date: string, bbox = DEFAULT_BBOX): Pr
 
   try {
     const decoded = jpeg.decode(buffer, { useTArray: true });
-    if (!decoded || decoded.width === 0 || decoded.height === 0) {
+    if (!decoded || decoded.width !== ANALYSIS_WIDTH || decoded.height !== ANALYSIS_HEIGHT) {
+      console.warn(`Decoded satellite image dimension mismatch: expected ${ANALYSIS_WIDTH}x${ANALYSIS_HEIGHT}, got ${decoded?.width}x${decoded?.height}`);
       return null;
     }
     return { buffer, decoded, url };

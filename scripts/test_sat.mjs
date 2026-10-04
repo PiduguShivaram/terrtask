@@ -89,7 +89,7 @@ async function testSatelliteProcessing() {
     console.log('Storm-Center to High-Albedo Cloud-Centroid Offset:', centroidOffsetKm, 'km');
   }
 
-  console.log('Decoded Pixels Ratio: 135,000 / 135,000 retrieved image pixels successfully decoded (', validDataCoveragePct, '%)');
+  console.log('Decoded Pixels: 135,000 / 135,000 retrieved image pixels successfully decoded');
   console.log('Mean Optical Brightness (0-255):', meanLum);
   console.log('High-Albedo Cloud Proxy Fraction:', cloudFractionPct, '%');
 }
