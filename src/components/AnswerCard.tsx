@@ -1,10 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { TerraAskResult, DataCategory } from '@/lib/types';
+import { TerraAskResult, DataCategory, EvidenceItem } from '@/lib/types';
 import { 
   ExternalLink, 
-  FileText, 
   ShieldAlert, 
   ChevronDown, 
   ChevronUp,
@@ -14,7 +13,13 @@ import {
   Clock,
   MapPin,
   Calendar,
-  AlertTriangle
+  AlertTriangle,
+  Compass,
+  Gauge,
+  Eye,
+  TrendingUp,
+  CheckCircle2,
+  FileCheck
 } from 'lucide-react';
 
 interface AnswerCardProps {
@@ -61,17 +66,124 @@ export const AnswerCard: React.FC<AnswerCardProps> = ({ result }) => {
     }
   };
 
+  const decisionAnswer = result.decisionAnswer;
+
+  // Filter evidence into Rule 19 groups
+  const observedEvidence = result.evidence.filter(e => e.category === 'Observed');
+  const satelliteEvidence = result.evidence.filter(
+    e => e.id.includes('satellite-cloud-proxy') || e.id.includes('satellite-centroid-offset')
+  );
+  const temporalEvidence = result.evidence.filter(
+    e => e.id.includes('temporal-comparison') || e.id.includes('forward-speed')
+  );
+  const otherEvidence = result.evidence.filter(
+    e => !observedEvidence.includes(e) && !satelliteEvidence.includes(e) && !temporalEvidence.includes(e)
+  );
+
+  const renderEvidenceCard = (ev: EvidenceItem) => {
+    const isExpanded = expandedEvidenceId === ev.id;
+    return (
+      <div
+        key={ev.id}
+        className="p-4 rounded-xl bg-earth-950/80 border border-earth-800 hover:border-earth-700 transition-all space-y-2.5"
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <span className="text-xs font-semibold text-slate-200">{ev.label}</span>
+            <div className="text-lg font-bold text-white tracking-tight font-mono mt-0.5">
+              {ev.displayValue}
+            </div>
+          </div>
+          {getCategoryBadge(ev.category)}
+        </div>
+
+        <p className="text-xs text-slate-400 leading-relaxed">
+          {ev.description}
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-earth-800/80 text-[11px] text-slate-400 font-mono">
+          {ev.timestamp && (
+            <div className="flex items-center gap-1.5 truncate">
+              <Calendar className="w-3 h-3 text-cyan-400 shrink-0" />
+              <span className="truncate">{ev.timestamp}</span>
+            </div>
+          )}
+          {ev.coordinates && (
+            <div className="flex items-center gap-1.5 truncate">
+              <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
+              <span>{ev.coordinates[0].toFixed(2)}°N, {ev.coordinates[1].toFixed(2)}°E</span>
+            </div>
+          )}
+          <div className="flex items-center justify-end">
+            <button
+              type="button"
+              onClick={() => setExpandedEvidenceId(isExpanded ? null : ev.id)}
+              className="text-cyan-400 hover:text-cyan-300 font-medium flex items-center gap-1 shrink-0 font-sans transition-colors"
+            >
+              <span>{isExpanded ? 'Hide Details' : 'Inspect Lineage'}</span>
+              {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            </button>
+          </div>
+        </div>
+
+        {isExpanded && (
+          <div className="mt-2.5 p-3 rounded-lg bg-earth-900/90 border border-earth-800 text-[11px] text-slate-300 space-y-1.5 font-mono">
+            <div>
+              <span className="text-slate-400">Source Provider:</span> <span className="text-slate-200">{ev.source}</span>
+            </div>
+            {ev.rawVariable && (
+              <div>
+                <span className="text-slate-400">Raw Variable:</span> <span className="text-cyan-300">{ev.rawVariable}</span>
+              </div>
+            )}
+            {ev.rawValue !== undefined && (
+              <div>
+                <span className="text-slate-400">Raw Recorded Value:</span> <span className="text-white font-bold">{String(ev.rawValue)} {ev.rawUnit || ''}</span>
+              </div>
+            )}
+            <div>
+              <span className="text-slate-400">Processing Method:</span> <span className="text-slate-200">{ev.processing}</span>
+            </div>
+            {ev.derivationDetails?.formula && (
+              <div className="text-emerald-300">
+                <span className="text-slate-400">Derivation Formula:</span> {ev.derivationDetails.formula}
+              </div>
+            )}
+            {ev.limitations && (
+              <div className="text-amber-300/90 font-sans pt-1">
+                <span className="font-semibold text-amber-400">Limitation:</span> {ev.limitations}
+              </div>
+            )}
+            {ev.rawUrl && (
+              <div className="pt-1.5">
+                <a
+                  href={ev.rawUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-cyan-400 hover:underline flex items-center gap-1 font-sans text-[11px]"
+                >
+                  <span>Open Direct Dataset Portal</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
-      {/* 1. ASSESSMENT (One concise paragraph) */}
-      <div className="p-6 rounded-2xl bg-earth-900/90 border border-earth-700/80 shadow-2xl relative overflow-hidden space-y-3">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
+      {/* 1. DIRECT ANSWER (Rule 19 Hierarchy: DIRECT ANSWER comes first) */}
+      <div className="p-6 rounded-2xl bg-earth-900/90 border border-cyan-500/30 shadow-2xl relative overflow-hidden space-y-4">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
         
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400" />
+            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" />
             <h2 className="text-xs uppercase tracking-widest font-bold text-cyan-400">
-              Assessment
+              Direct Decision Answer
             </h2>
           </div>
           {result.storm && (
@@ -81,11 +193,60 @@ export const AnswerCard: React.FC<AnswerCardProps> = ({ result }) => {
           )}
         </div>
 
-        <p className="text-base lg:text-lg text-slate-100 font-medium leading-relaxed">
-          {result.assessment || result.answer}
+        {/* Primary Executive Answer */}
+        <p className="text-base lg:text-lg text-white font-medium leading-relaxed">
+          {decisionAnswer?.directAnswer || result.assessment || result.answer}
         </p>
 
-        {/* Temporal Synchronization Strip (Section 11) */}
+        {/* Structured Dimension Breakdown (Rule 18) */}
+        {decisionAnswer && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 text-xs">
+            {decisionAnswer.whatHappened && (
+              <div className="p-2.5 rounded-lg bg-earth-950/60 border border-earth-800 space-y-1">
+                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">What Happened</span>
+                <p className="text-slate-200 text-[11px] leading-snug">{decisionAnswer.whatHappened}</p>
+              </div>
+            )}
+            {decisionAnswer.where && (
+              <div className="p-2.5 rounded-lg bg-earth-950/60 border border-earth-800 space-y-1">
+                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Where</span>
+                <p className="text-slate-200 text-[11px] leading-snug">{decisionAnswer.where}</p>
+              </div>
+            )}
+            {decisionAnswer.when && (
+              <div className="p-2.5 rounded-lg bg-earth-950/60 border border-earth-800 space-y-1">
+                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">When</span>
+                <p className="text-slate-200 text-[11px] leading-snug font-mono text-cyan-300">{decisionAnswer.when}</p>
+              </div>
+            )}
+            {decisionAnswer.howStrong && (
+              <div className="p-2.5 rounded-lg bg-earth-950/60 border border-earth-800 space-y-1">
+                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Observed Strength</span>
+                <p className="text-slate-200 text-[11px] leading-snug">{decisionAnswer.howStrong}</p>
+              </div>
+            )}
+            {decisionAnswer.whatSatelliteShows && (
+              <div className="p-2.5 rounded-lg bg-earth-950/60 border border-earth-800 space-y-1 sm:col-span-2">
+                <span className="text-[10px] uppercase font-bold text-cyan-400 tracking-wider">Satellite Evidence</span>
+                <p className="text-slate-200 text-[11px] leading-snug">{decisionAnswer.whatSatelliteShows}</p>
+              </div>
+            )}
+            {decisionAnswer.whatChangedOverTime && (
+              <div className="p-2.5 rounded-lg bg-earth-950/60 border border-earth-800 space-y-1 sm:col-span-2">
+                <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">Change Over Time</span>
+                <p className="text-slate-200 text-[11px] leading-snug">{decisionAnswer.whatChangedOverTime}</p>
+              </div>
+            )}
+            {decisionAnswer.supportingEvidenceSummary && (
+              <div className="p-2.5 rounded-lg bg-earth-950/60 border border-earth-800 space-y-1 sm:col-span-2">
+                <span className="text-[10px] uppercase font-bold text-purple-400 tracking-wider">Supporting Evidence Lineage</span>
+                <p className="text-slate-300 text-[11px] leading-snug">{decisionAnswer.supportingEvidenceSummary}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Temporal Synchronization Strip (Rule 13) */}
         {result.temporalSync && (
           <div className="pt-2 border-t border-earth-800 text-[11px] text-slate-400 flex flex-col gap-1 font-mono">
             <div className="flex items-center gap-2 text-slate-300">
@@ -105,141 +266,96 @@ export const AnswerCard: React.FC<AnswerCardProps> = ({ result }) => {
         )}
       </div>
 
-      {/* 2. EVIDENCE CARDS (What, Source, When, Where, Type, Processing, Limitations) */}
-      <div className="p-6 rounded-2xl bg-earth-900/80 border border-earth-800 shadow-xl space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Activity className="w-4 h-4 text-emerald-400" />
-            <h3 className="text-xs uppercase tracking-widest font-bold text-slate-300">
-              Observational Evidence Bundle
-            </h3>
-          </div>
-          <span className="text-xs text-slate-400 font-mono">
-            {result.evidence.length} validated items
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 gap-3.5">
-          {result.evidence.map((ev) => {
-            const isExpanded = expandedEvidenceId === ev.id;
-            return (
-              <div
-                key={ev.id}
-                className="p-4 rounded-xl bg-earth-950/80 border border-earth-800 hover:border-earth-700 transition-all space-y-2.5"
-              >
-                {/* Header: What & Category Type */}
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <span className="text-xs font-semibold text-slate-200">{ev.label}</span>
-                    <div className="text-lg font-bold text-white tracking-tight font-mono mt-0.5">
-                      {ev.displayValue}
-                    </div>
-                  </div>
-                  {getCategoryBadge(ev.category)}
-                </div>
-
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  {ev.description}
-                </p>
-
-                {/* Structured Metadata Strip: When, Where, Source */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-earth-800/80 text-[11px] text-slate-400 font-mono">
-                  {ev.timestamp && (
-                    <div className="flex items-center gap-1.5 truncate">
-                      <Calendar className="w-3 h-3 text-cyan-400 shrink-0" />
-                      <span className="truncate">{ev.timestamp}</span>
-                    </div>
-                  )}
-                  {ev.coordinates && (
-                    <div className="flex items-center gap-1.5 truncate">
-                      <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
-                      <span>{ev.coordinates[0].toFixed(2)}°N, {ev.coordinates[1].toFixed(2)}°E</span>
-                    </div>
-                  )}
-                  <div className="flex items-center justify-end sm:justify-end">
-                    <button
-                      type="button"
-                      onClick={() => setExpandedEvidenceId(isExpanded ? null : ev.id)}
-                      className="text-cyan-400 hover:text-cyan-300 font-medium flex items-center gap-1 shrink-0 font-sans transition-colors"
-                    >
-                      <span>{isExpanded ? 'Hide Details' : 'Inspect Lineage'}</span>
-                      {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Detailed Lineage: Processing & Limitations */}
-                {isExpanded && (
-                  <div className="mt-2.5 p-3 rounded-lg bg-earth-900/90 border border-earth-800 text-[11px] text-slate-300 space-y-1.5 font-mono">
-                    <div>
-                      <span className="text-slate-400">Source Provider:</span> <span className="text-slate-200">{ev.source}</span>
-                    </div>
-                    {ev.rawVariable && (
-                      <div>
-                        <span className="text-slate-400">Raw Variable:</span> <span className="text-cyan-300">{ev.rawVariable}</span>
-                      </div>
-                    )}
-                    {ev.rawValue !== undefined && (
-                      <div>
-                        <span className="text-slate-400">Raw Recorded Value:</span> <span className="text-white font-bold">{String(ev.rawValue)} {ev.rawUnit || ''}</span>
-                      </div>
-                    )}
-                    <div>
-                      <span className="text-slate-400">Processing Method:</span> <span className="text-slate-200">{ev.processing}</span>
-                    </div>
-                    {ev.derivationDetails?.formula && (
-                      <div className="text-emerald-300">
-                        <span className="text-slate-400">Derivation Formula:</span> {ev.derivationDetails.formula}
-                      </div>
-                    )}
-                    {ev.limitations && (
-                      <div className="text-amber-300/90 font-sans pt-1">
-                        <span className="font-semibold text-amber-400">Limitation:</span> {ev.limitations}
-                      </div>
-                    )}
-                    {ev.rawUrl && (
-                      <div className="pt-1.5">
-                        <a
-                          href={ev.rawUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-cyan-400 hover:underline flex items-center gap-1 font-sans text-[11px]"
-                        >
-                          <span>Open Direct Dataset Portal</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 3. DERIVED ANALYSIS (Only if calculations exist) */}
-      {result.derivedAnalysis && (
-        <div className="p-6 rounded-2xl bg-earth-900/80 border border-earth-800 shadow-xl space-y-3">
-          <div className="flex items-center gap-2">
-            <Calculator className="w-4 h-4 text-emerald-400" />
-            <h3 className="text-xs uppercase tracking-widest font-bold text-slate-300">
-              Derived Geospatial Analysis
-            </h3>
+      {/* 2. OBSERVED EVIDENCE (Rule 19 Hierarchy) */}
+      {observedEvidence.length > 0 && (
+        <div className="p-6 rounded-2xl bg-earth-900/80 border border-earth-800 shadow-xl space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Activity className="w-4 h-4 text-cyan-400" />
+              <h3 className="text-xs uppercase tracking-widest font-bold text-slate-300">
+                Observed In-Situ / Best-Track Evidence
+              </h3>
+            </div>
+            <span className="text-xs text-cyan-400 font-mono">
+              {observedEvidence.length} direct records
+            </span>
           </div>
 
-          <div className="text-xs text-slate-300 leading-relaxed bg-earth-950/60 p-4 rounded-xl border border-earth-800 font-sans">
-            {result.derivedAnalysis}
+          <div className="grid grid-cols-1 gap-3.5">
+            {observedEvidence.map(renderEvidenceCard)}
           </div>
         </div>
       )}
 
-      {/* 4. LIMITATIONS & HONEST UNCERTAINTY */}
-      <div className="p-6 rounded-2xl bg-earth-900/80 border border-earth-800 shadow-xl space-y-3">
+      {/* 3. SATELLITE EVIDENCE (Derived Visuals) */}
+      {satelliteEvidence.length > 0 && (
+        <div className="p-6 rounded-2xl bg-earth-900/80 border border-earth-800 shadow-xl space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Eye className="w-4 h-4 text-emerald-400" />
+              <h3 className="text-xs uppercase tracking-widest font-bold text-slate-300">
+                Satellite-Derived Visual Evidence (NASA MODIS Terra)
+              </h3>
+            </div>
+            <span className="text-xs text-emerald-400 font-mono">
+              {satelliteEvidence.length} derived metrics
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3.5">
+            {satelliteEvidence.map(renderEvidenceCard)}
+          </div>
+        </div>
+      )}
+
+      {/* 4. CHANGE OVER TIME (Temporal Analytics) */}
+      {temporalEvidence.length > 0 && (
+        <div className="p-6 rounded-2xl bg-earth-900/80 border border-earth-800 shadow-xl space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-amber-400" />
+              <h3 className="text-xs uppercase tracking-widest font-bold text-slate-300">
+                Change Over Time &amp; Temporal Evolution
+              </h3>
+            </div>
+            <span className="text-xs text-amber-400 font-mono">
+              {temporalEvidence.length} temporal metrics
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3.5">
+            {temporalEvidence.map(renderEvidenceCard)}
+          </div>
+        </div>
+      )}
+
+      {/* 5. INTERPRETATION & MODEL-BASED CONTEXT */}
+      {otherEvidence.length > 0 && (
+        <div className="p-6 rounded-2xl bg-earth-900/80 border border-earth-800 shadow-xl space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Calculator className="w-4 h-4 text-purple-400" />
+              <h3 className="text-xs uppercase tracking-widest font-bold text-slate-300">
+                Contextual &amp; Model-Based Evidence
+              </h3>
+            </div>
+            <span className="text-xs text-purple-400 font-mono">
+              {otherEvidence.length} items
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3.5">
+            {otherEvidence.map(renderEvidenceCard)}
+          </div>
+        </div>
+      )}
+
+      {/* 6. WHAT TERRAASK CANNOT DETERMINE (LIMITATIONS - Rule 19 Hierarchy) */}
+      <div className="p-6 rounded-2xl bg-earth-900/80 border border-amber-500/30 shadow-xl space-y-3">
         <div className="flex items-center gap-2">
           <ShieldAlert className="w-4 h-4 text-amber-400" />
-          <h3 className="text-xs uppercase tracking-widest font-bold text-slate-300">
-            Observational Limitations &amp; Uncertainty
+          <h3 className="text-xs uppercase tracking-widest font-bold text-amber-400">
+            What TerraAsk Cannot Determine (Limitations)
           </h3>
         </div>
 
@@ -249,8 +365,8 @@ export const AnswerCard: React.FC<AnswerCardProps> = ({ result }) => {
             <span>{result.uncertainty.statement}</span>
           </div>
 
-          <ul className="list-disc pl-4 space-y-1 text-[11px] text-slate-300">
-            {result.uncertainty.limitations.map((lim, idx) => (
+          <ul className="list-disc pl-4 space-y-1.5 text-[11px] text-slate-300">
+            {(decisionAnswer?.whatCannotBeDetermined || result.uncertainty.limitations).map((lim, idx) => (
               <li key={idx} className="leading-relaxed">
                 {lim}
               </li>
@@ -259,7 +375,7 @@ export const AnswerCard: React.FC<AnswerCardProps> = ({ result }) => {
         </div>
       </div>
 
-      {/* 5. SOURCES (Clickable Provenance Lineage) */}
+      {/* 7. SOURCES / EVIDENCE (Clickable Provenance Lineage - Rule 19 Hierarchy) */}
       <div className="p-6 rounded-2xl bg-earth-900/80 border border-earth-800 shadow-xl space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

@@ -132,20 +132,39 @@ export interface ResolvedLocation {
   description: string;
 }
 
+export interface StructuredDecisionAnswer {
+  directAnswer: string;
+  whatHappened?: string;
+  where?: string;
+  when?: string;
+  howStrong?: string;
+  whatSatelliteShows?: string;
+  whatChangedOverTime?: string;
+  supportingEvidenceSummary?: string;
+  whatCannotBeDetermined: string[];
+}
+
+export type QueryIntentType = 
+  | 'location_hazard' 
+  | 'cyclone_intensity' 
+  | 'temporal_evolution' 
+  | 'evidence_inspection' 
+  | 'satellite_intensity_request'
+  | 'satellite_visual_analysis'
+  | 'satellite_comparison'
+  | 'closest_storm_query'
+  | 'historical_cyclone_comparison'
+  | 'satellite_capabilities_inquiry'
+  | 'optical_change_misinterpretation'
+  | 'era5_nature_inquiry'
+  | 'unsupported_forecast' 
+  | 'unsupported_damage' 
+  | 'unknown_or_unsupported';
+
 export interface TerraAskResult {
   query: string;
   intent: {
-    type: 
-      | 'location_hazard' 
-      | 'cyclone_intensity' 
-      | 'temporal_evolution' 
-      | 'evidence_inspection' 
-      | 'satellite_intensity_request'
-      | 'satellite_visual_analysis'
-      | 'satellite_comparison'
-      | 'unsupported_forecast' 
-      | 'unsupported_damage' 
-      | 'unknown_or_unsupported';
+    type: QueryIntentType;
     targetLocation?: string;
     targetStormName?: string;
     coordinates?: [number, number];
@@ -154,6 +173,7 @@ export interface TerraAskResult {
   // Answer Structure
   assessment: string;
   answer: string; // compatibility
+  decisionAnswer?: StructuredDecisionAnswer;
   derivedAnalysis?: string;
   limitations?: string[];
   evidence: EvidenceItem[];

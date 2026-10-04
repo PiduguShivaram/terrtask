@@ -188,6 +188,8 @@ export default function TerraAskHome() {
                 stationName={result.environmentalStationName}
                 activePointIndex={activePointIndex}
                 onSelectPoint={setActivePointIndex}
+                satelliteAnalysis={result.satelliteAnalysis}
+                satelliteComparison={result.satelliteComparison}
               />
             </div>
 
