@@ -87,11 +87,17 @@ export function findStormsNearLocation(
     }
   }
 
-  // Rank by proximity, then by wind intensity
+  // Rank primarily by closest approach distance (km).
+  // Tie-breaker: peak wind intensity, then deterministic SID ordering.
   return results.sort((a, b) => {
-    if (Math.abs(a.closestDistanceKm - b.closestDistanceKm) > 25) {
-      return a.closestDistanceKm - b.closestDistanceKm;
+    const distDiff = a.closestDistanceKm - b.closestDistanceKm;
+    if (Math.abs(distDiff) > 0.1) {
+      return distDiff;
     }
-    return (b.peakWindKts || 0) - (a.peakWindKts || 0);
+    const windDiff = (b.peakWindKts || 0) - (a.peakWindKts || 0);
+    if (windDiff !== 0) {
+      return windDiff;
+    }
+    return a.storm.sid.localeCompare(b.storm.sid);
   });
 }
