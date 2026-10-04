@@ -25,8 +25,9 @@ export const Map: React.FC<MapProps> = ({
   const layersRef = useRef<Record<string, any>>({});
   const trackLayersRef = useRef<any[]>([]);
 
-  const [activeBaseLayer, setActiveBaseLayer] = useState<'satellite' | 'dark' | 'osm'>('satellite');
+  const [activeBaseLayer, setActiveBaseLayer] = useState<'dark' | 'satellite' | 'osm'>('dark');
   const [showRadii, setShowRadii] = useState(true);
+  const [mapReady, setMapReady] = useState(false);
 
   // Initialize Leaflet Map
   useEffect(() => {
@@ -39,7 +40,7 @@ export const Map: React.FC<MapProps> = ({
 
       const defaultCenter: [number, number] = targetLocation 
         ? [targetLocation.lat, targetLocation.lon]
-        : [19.8, 85.8];
+        : [19.8135, 85.8312];
 
       const map = L.map(mapContainerRef.current, {
         center: defaultCenter,
@@ -51,24 +52,25 @@ export const Map: React.FC<MapProps> = ({
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
       L.control.attribution({ position: 'bottomleft', prefix: false })
-        .addAttribution('&copy; <a href="https://earthdata.nasa.gov" target="_blank" class="text-cyan-400">NASA GIBS</a> &bull; NOAA IBTrACS &bull; OpenStreetMap')
+        .addAttribution('&copy; <a href="https://carto.com" target="_blank" class="text-cyan-400">CARTO</a> &bull; <a href="https://earthdata.nasa.gov" target="_blank" class="text-cyan-400">NASA GIBS</a> &bull; NOAA IBTrACS &bull; OpenStreetMap')
         .addTo(map);
 
-      // 1. NASA GIBS Satellite Base Layer
-      const gibsLayer = L.tileLayer(
-        `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/${satelliteDate}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`,
-        {
-          maxZoom: 9,
-          attribution: 'NASA EOSDIS GIBS',
-        }
-      );
-
-      // 2. Dark CartoDB Layer
+      // 1. Dark CartoDB Layer (default high-contrast dark geographic context)
       const darkLayer = L.tileLayer(
         'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
         {
           maxZoom: 19,
           subdomains: 'abcd',
+          attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+        }
+      );
+
+      // 2. NASA GIBS Satellite Base Layer
+      const gibsLayer = L.tileLayer(
+        `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/${satelliteDate || '2019-05-03'}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`,
+        {
+          maxZoom: 9,
+          attribution: 'NASA EOSDIS GIBS',
         }
       );
 
@@ -77,17 +79,41 @@ export const Map: React.FC<MapProps> = ({
         'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
         {
           maxZoom: 19,
+          attribution: '&copy; OpenStreetMap contributors',
         }
       );
 
       layersRef.current = {
-        satellite: gibsLayer,
         dark: darkLayer,
+        satellite: gibsLayer,
         osm: osmLayer,
       };
 
-      gibsLayer.addTo(map);
+      // Add default basemap
+      darkLayer.addTo(map);
+
       mapInstanceRef.current = map;
+      setMapReady(true);
+
+      // Invalidate size immediately and after layout completes
+      map.invalidateSize();
+      const timer = setTimeout(() => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
+        }
+      }, 150);
+
+      const handleResize = () => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
+        }
+      };
+      window.addEventListener('resize', handleResize);
+
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('resize', handleResize);
+      };
     });
 
     return () => {
@@ -96,13 +122,14 @@ export const Map: React.FC<MapProps> = ({
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       }
+      setMapReady(false);
     };
   }, []);
 
   // Update Base Layer & Satellite Date
   useEffect(() => {
     const map = mapInstanceRef.current;
-    if (!map) return;
+    if (!map || !mapReady) return;
 
     import('leaflet').then((L) => {
       Object.values(layersRef.current).forEach((layer) => {
@@ -113,7 +140,7 @@ export const Map: React.FC<MapProps> = ({
 
       if (activeBaseLayer === 'satellite') {
         const gibsLayer = L.tileLayer(
-          `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/${satelliteDate}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`,
+          `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/${satelliteDate || '2019-05-03'}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`,
           {
             maxZoom: 9,
             attribution: 'NASA EOSDIS GIBS',
@@ -121,18 +148,19 @@ export const Map: React.FC<MapProps> = ({
         );
         layersRef.current.satellite = gibsLayer;
         gibsLayer.addTo(map);
-      } else if (activeBaseLayer === 'dark') {
-        layersRef.current.dark?.addTo(map);
       } else if (activeBaseLayer === 'osm') {
         layersRef.current.osm?.addTo(map);
+      } else {
+        layersRef.current.dark?.addTo(map);
       }
+      map.invalidateSize();
     });
-  }, [activeBaseLayer, satelliteDate]);
+  }, [mapReady, activeBaseLayer, satelliteDate]);
 
   // Render Target Location Pin, Track, Landfall, and Wind Radii
   useEffect(() => {
     const map = mapInstanceRef.current;
-    if (!map || !storm || !storm.track || storm.track.length === 0) return;
+    if (!map || !mapReady || !storm || !storm.track || storm.track.length === 0) return;
 
     import('leaflet').then((L) => {
       // Clear previous layers
@@ -273,29 +301,16 @@ export const Map: React.FC<MapProps> = ({
         }
       }
     });
-  }, [storm, targetLocation, activePointIndex, showRadii]);
+  }, [mapReady, storm, targetLocation, activePointIndex, showRadii]);
 
   return (
-    <div className="relative w-full h-full min-h-[480px] lg:min-h-[580px] rounded-2xl overflow-hidden border border-earth-800 bg-earth-950 shadow-2xl">
+    <div className="relative w-full h-[480px] lg:h-[580px] rounded-2xl overflow-hidden border border-earth-800 bg-earth-950 shadow-2xl">
       {/* Map Container */}
-      <div ref={mapContainerRef} className="w-full h-full z-0" />
+      <div ref={mapContainerRef} className="absolute inset-0 w-full h-full z-0" />
 
       {/* Layer Controls & Overlays */}
       <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
         <div className="flex items-center gap-1 p-1 bg-earth-900/90 backdrop-blur-md rounded-xl border border-earth-700/80 shadow-xl">
-          <button
-            type="button"
-            onClick={() => setActiveBaseLayer('satellite')}
-            className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
-              activeBaseLayer === 'satellite'
-                ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/20'
-                : 'text-slate-300 hover:text-white hover:bg-earth-800'
-            }`}
-          >
-            <Eye className="w-3.5 h-3.5" />
-            <span>NASA Satellite</span>
-          </button>
-
           <button
             type="button"
             onClick={() => setActiveBaseLayer('dark')}
@@ -307,6 +322,19 @@ export const Map: React.FC<MapProps> = ({
           >
             <Layers className="w-3.5 h-3.5" />
             <span>Dark Carto</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveBaseLayer('satellite')}
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
+              activeBaseLayer === 'satellite'
+                ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/20'
+                : 'text-slate-300 hover:text-white hover:bg-earth-800'
+            }`}
+          >
+            <Eye className="w-3.5 h-3.5" />
+            <span>NASA Satellite</span>
           </button>
 
           <button

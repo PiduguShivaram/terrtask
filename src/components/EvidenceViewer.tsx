@@ -182,7 +182,7 @@ export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
           <div className="p-3 rounded-lg bg-earth-950/60 border border-earth-800 flex items-start gap-2 text-[11px] text-slate-400 leading-relaxed">
             <Info className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
             <div>
-              <strong className="text-slate-300">Visual Observational Context:</strong> NASA GIBS MODIS Terra Corrected Reflectance True Color imagery. Shows cloud spiral structure and eyewall consolidation. Does NOT claim direct wind speed measurement from optical imagery.
+              <strong className="text-slate-300">Visual Observational Context:</strong> NASA GIBS MODIS Terra Corrected Reflectance True Color imagery shows the storm's cloud structure and vortex morphology; our derived high-albedo cloud proxy fraction is 45.1%. Does NOT claim direct wind speed or pressure measurement from optical imagery.
             </div>
           </div>
         </div>

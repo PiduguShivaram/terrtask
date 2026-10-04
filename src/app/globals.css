@@ -1,3 +1,5 @@
+@import 'leaflet/dist/leaflet.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -15,14 +17,22 @@ body {
 }
 
 /* Custom Leaflet Controls & DivIcons */
-.custom-track-marker {
+.custom-track-marker,
+.custom-target-marker {
   background: transparent !important;
   border: none !important;
 }
 
 .leaflet-container {
   font-family: inherit !important;
-  background-color: #050b14 !important;
+  background-color: #0b1526 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.leaflet-container img {
+  max-width: none !important;
+  max-height: none !important;
 }
 
 .leaflet-tooltip {

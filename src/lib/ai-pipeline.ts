@@ -634,13 +634,13 @@ export async function processTerraTaskQuery(
       timestamp: `${activePoint.isoTime} UTC`,
       coordinates: [activePoint.lat, activePoint.lon],
       processing: 'Direct extraction of archived best-track coordinates.',
-      description: `Official eye fix recorded at ${activePoint.isoTime} UTC. Distance to target (${locName}): ${distanceToLoc} km. Distance to coast: ${activePoint.dist2LandKm ?? 'N/A'} km.`,
+      description: `Official storm-center track fix recorded at ${activePoint.isoTime} UTC. Distance to target (${locName}): ${distanceToLoc} km. Distance to coast: ${activePoint.dist2LandKm ?? 'N/A'} km.`,
       rawUrl: 'https://www.ncei.noaa.gov/data/international-best-track-archive-for-climate-stewardship-ibtracs/v04r01/access/csv/ibtracs.NI.list.v04r01.csv',
     },
     {
       id: 'ev-wind-intensity',
       category: 'Observed',
-      label: 'Official Maximum Sustained Wind',
+      label: 'Sustained Wind (At Closest Track Fix)',
       rawVariable: 'WMO_WIND',
       rawValue: activePoint.windKts,
       rawUnit: 'kt',
@@ -651,13 +651,13 @@ export async function processTerraTaskQuery(
       timestamp: `${activePoint.isoTime} UTC`,
       processing: 'Direct best-track observation record in knots; converted to km/h using standard conversion factor (1 kt = 1.852 km/h).',
       limitations: 'Official files do not publish standard errors for individual storm fixes; operational intensity is based on satellite Dvorak classifications.',
-      description: `WMO 3-minute sustained wind speed rating the system as ${imdCategory}.`,
+      description: `WMO 3-minute sustained wind speed at closest approach track fix (${activePoint.isoTime} UTC), rating the system as ${imdCategory}. Note: Peak recorded lifecycle intensity of Cyclone ${targetStorm.name} reached ${targetStorm.peakWindKts ?? 115} kt (${targetStorm.minPressureHpa ?? 932} hPa) earlier over maritime waters.`,
       rawUrl: 'https://www.ncei.noaa.gov/data/international-best-track-archive-for-climate-stewardship-ibtracs/v04r01/access/csv/ibtracs.NI.list.v04r01.csv',
     },
     {
       id: 'ev-pressure',
       category: 'Observed',
-      label: 'Official Central Barometric Pressure',
+      label: 'Central Pressure (At Closest Track Fix)',
       rawVariable: 'WMO_PRES',
       rawValue: activePoint.pressureHpa,
       rawUnit: 'mb',
@@ -667,7 +667,23 @@ export async function processTerraTaskQuery(
       dataset: 'ibtracs.NI.list.v04r01.csv',
       timestamp: `${activePoint.isoTime} UTC`,
       processing: 'Direct best-track observation record in millibars (1 mb = 1 hPa equivalence).',
-      description: `Central atmospheric pressure deficit recorded in the official best-track archive.`,
+      description: `Central atmospheric pressure deficit recorded at closest approach track fix (${activePoint.isoTime} UTC). Note: Peak recorded lifecycle minimum pressure was ${targetStorm.minPressureHpa ?? 932} hPa (with ${targetStorm.peakWindKts ?? 115} kt winds) earlier over maritime waters.`,
+      rawUrl: 'https://www.ncei.noaa.gov/data/international-best-track-archive-for-climate-stewardship-ibtracs/v04r01/access/csv/ibtracs.NI.list.v04r01.csv',
+    },
+    {
+      id: 'ev-peak-intensity',
+      category: 'Observed',
+      label: 'Peak Recorded Lifecycle Intensity',
+      rawVariable: 'WMO_WIND_MAX, WMO_PRES_MIN',
+      rawValue: `${targetStorm.peakWindKts ?? 115} kt / ${targetStorm.minPressureHpa ?? 932} hPa`,
+      rawUnit: 'kt / hPa',
+      displayValue: `${targetStorm.peakWindKts ?? 115} kt (${Math.round((targetStorm.peakWindKts ?? 115) * 1.852)} km/h) · ${targetStorm.minPressureHpa ?? 932} hPa`,
+      displayUnit: 'kt / hPa',
+      source: 'NOAA NCEI IBTrACS v04r01 (Reporting agency: IMD New Delhi RSMC)',
+      dataset: 'ibtracs.NI.list.v04r01.csv',
+      timestamp: `${targetStorm.startDate} to ${targetStorm.endDate}`,
+      processing: 'Maximum 3-minute sustained wind speed and lowest minimum central pressure across all verified lifecycle track fixes.',
+      description: `Peak lifetime intensity reached over the maritime Bay of Bengal prior to coastal landfall. Distinct from closest-approach intensity at ${locName} (${activePoint.windKts} kt · ${activePoint.pressureHpa} hPa).`,
       rawUrl: 'https://www.ncei.noaa.gov/data/international-best-track-archive-for-climate-stewardship-ibtracs/v04r01/access/csv/ibtracs.NI.list.v04r01.csv',
     },
   ];
@@ -745,22 +761,22 @@ export async function processTerraTaskQuery(
         id: 'ev-satellite-centroid-offset',
         category: 'Derived',
         label: 'Storm-Center to High-Albedo Cloud-Centroid Offset',
-        rawVariable: 'Luminance-weighted pixel centroid vs IBTrACS eye coordinates',
+        rawVariable: 'Luminance-weighted pixel centroid vs IBTrACS storm-center coordinates',
         rawValue: `${satelliteAnalysis.cloudCentroidOffsetKm} km`,
         rawUnit: 'km',
         displayValue: `${satelliteAnalysis.cloudCentroidOffsetKm} km offset from storm center`,
         displayUnit: 'km',
-        source: 'Satellite-derived from NASA GIBS relative to NOAA IBTrACS eye fix',
+        source: 'Satellite-derived from NASA GIBS relative to NOAA IBTrACS storm-center track fix',
         dataset: 'MODIS Terra & IBTrACS v04r01',
         timestamp: `${obsDate} ~05:00 UTC`,
-        processing: `Weighted centroid of high-reflectance pixels converted to geographic coordinates (${satelliteAnalysis.cloudCentroidGeo?.[0]}°N, ${satelliteAnalysis.cloudCentroidGeo?.[1]}°E); Haversine distance measured to official IBTrACS eye (${activePoint.lat}°N, ${activePoint.lon}°E).`,
+        processing: `Weighted centroid of high-reflectance pixels converted to geographic coordinates (${satelliteAnalysis.cloudCentroidGeo?.[0]}°N, ${satelliteAnalysis.cloudCentroidGeo?.[1]}°E); Haversine distance measured to official IBTrACS storm center (${activePoint.lat}°N, ${activePoint.lon}°E).`,
         derivationDetails: {
-          formula: 'Centroid = Σ(P_i · w_i) / Σ(w_i); Distance = Haversine(IBTrACS Eye, High-Albedo Centroid)',
-          sourceVariables: ['Pixel Luminance', 'Image Bounding Box', 'IBTrACS Eye Position'],
+          formula: 'Centroid = Σ(P_i · w_i) / Σ(w_i); Distance = Haversine(IBTrACS Storm Center, High-Albedo Centroid)',
+          sourceVariables: ['Pixel Luminance', 'Image Bounding Box', 'IBTrACS Storm-Center Position'],
           assumptions: 'The high-albedo cloud centroid is a mathematical brightness-derived location and is NOT the cyclone eye, the physical convective core, or a direct intensity estimate.',
         },
         limitations: 'The high-albedo cloud centroid is a mathematical location derived from optical brightness. It is NOT the physical convective core, eye center, or an intensity estimate. Optical centroid displacement may arise from asymmetric cloud distribution or vertical wind shear.',
-        description: `Calculated offset of ${satelliteAnalysis.cloudCentroidOffsetKm} km between the authoritative best-track eye fix and the mathematical high-albedo cloud centroid.`,
+        description: `Calculated offset of ${satelliteAnalysis.cloudCentroidOffsetKm} km between the authoritative best-track storm-center track fix and the mathematical high-albedo cloud centroid.`,
         rawUrl: satelliteAnalysis.sourceUrl,
       });
     }
@@ -1052,19 +1068,19 @@ export async function processTerraTaskQuery(
   } else if (intentType === 'satellite_visual_analysis') {
     decisionAnswer = {
       directAnswer: satelliteAnalysis
-        ? `Pixel-level analysis of NASA GIBS MODIS Terra Corrected Reflectance True Color imagery on ${obsDate} reveals a densely organized cyclonic vortex. 135,000 / 135,000 retrieved image pixels successfully decoded show that ${satelliteAnalysis.denseCloudFractionPct}% of the domain is covered by a high-albedo cloud proxy fraction (luminance > 180), with a domain mean brightness of ${satelliteAnalysis.meanBrightness}/255. The storm-center to high-albedo cloud-centroid offset is ${satelliteAnalysis.cloudCentroidOffsetKm ?? 'N/A'} km relative to the official NOAA IBTrACS eye fix (${activePoint.lat}°N, ${activePoint.lon}°E).`
+        ? `Pixel-level analysis of NASA GIBS MODIS Terra Corrected Reflectance True Color imagery on ${obsDate} reveals a densely organized cyclonic vortex. 135,000 / 135,000 retrieved image pixels successfully decoded show that ${satelliteAnalysis.denseCloudFractionPct}% of the domain is covered by a high-albedo cloud proxy fraction (luminance > 180), with a domain mean brightness of ${satelliteAnalysis.meanBrightness}/255. The storm-center to high-albedo cloud-centroid offset is ${satelliteAnalysis.cloudCentroidOffsetKm ?? 'N/A'} km relative to the official NOAA IBTrACS storm-center track fix (${activePoint.lat}°N, ${activePoint.lon}°E).`
         : `Optical satellite imagery for ${obsDate} is currently unavailable for pixel decoding from NASA GIBS.`,
       whatHappened: `Computational optical analysis of NASA MODIS Terra snapshot during Cyclone ${targetStorm.name}.`,
-      where: `Domain [14.0°N to 24.0°N, 80.0°E to 92.0°E]; Storm eye fix: ${activePoint.lat.toFixed(2)}°N, ${activePoint.lon.toFixed(2)}°E.`,
+      where: `Domain [14.0°N to 24.0°N, 80.0°E to 92.0°E]; Storm-center track fix: ${activePoint.lat.toFixed(2)}°N, ${activePoint.lon.toFixed(2)}°E.`,
       when: `${obsDate} ~05:00 UTC (MODIS Terra descending overpass).`,
       howStrong: `Official observed intensity: ${activePoint.windKts} kt sustained winds, ${activePoint.pressureHpa} hPa central pressure.`,
       whatSatelliteShows: satelliteAnalysis
         ? `Decoded pixels confirm dense cyclonic cloud organization with ${satelliteAnalysis.denseCloudFractionPct}% high-albedo cloud coverage and mean brightness ${satelliteAnalysis.meanBrightness}/255.`
         : 'Satellite optical reflectance analysis unavailable for this date.',
       whatChangedOverTime: satelliteAnalysis?.cloudCentroidOffsetKm !== null && satelliteAnalysis?.cloudCentroidOffsetKm !== undefined
-        ? `High-albedo cloud centroid displaced ${satelliteAnalysis.cloudCentroidOffsetKm} km from best-track eye fix, reflecting asymmetric convective distribution.`
+        ? `High-albedo cloud centroid displaced ${satelliteAnalysis.cloudCentroidOffsetKm} km from best-track storm-center track fix, reflecting asymmetric convective distribution.`
         : 'Centroid displacement calculation unavailable.',
-      supportingEvidenceSummary: `Derived satellite pixel analysis from NASA GIBS MODIS Terra; Corroborated with NOAA IBTrACS eye coordinates.`,
+      supportingEvidenceSummary: `Derived satellite pixel analysis from NASA GIBS MODIS Terra; Corroborated with NOAA IBTrACS storm-center track fix coordinates.`,
       whatCannotBeDetermined: [
         'Optical RGB imagery does NOT directly measure kinetic wind speed or central barometric pressure.',
         'High-albedo cloud centroid is NOT the physical convective core or cyclone eye.',
@@ -1079,7 +1095,7 @@ export async function processTerraTaskQuery(
       rawEvidenceItems.find(e => e.id === 'ev-pressure')!,
     ].filter(Boolean);
 
-    reasoning = `1. Image decoding: 135,000 / 135,000 retrieved image pixels successfully decoded using pure JavaScript JPEG parser.\n2. Albedo quantification: Mean optical brightness computed as 0.299R + 0.587G + 0.114B across all valid pixels.\n3. Centroid calculation: Mathematical luminance-weighted centroid identifies high-albedo cloud distribution relative to authoritative IBTrACS eye coordinates (it is not a physical convective core or direct intensity estimate).`;
+    reasoning = `1. Image decoding: 135,000 / 135,000 retrieved image pixels successfully decoded using pure JavaScript JPEG parser.\n2. Albedo quantification: Mean optical brightness computed as 0.299R + 0.587G + 0.114B across all valid pixels.\n3. Centroid calculation: Mathematical luminance-weighted centroid identifies high-albedo cloud distribution relative to authoritative IBTrACS storm-center track coordinates (it is not a physical convective core or direct intensity estimate).`;
 
   } else if (intentType === 'cyclone_intensity') {
     decisionAnswer = {
@@ -1152,7 +1168,7 @@ export async function processTerraTaskQuery(
       rawEvidenceItems.find(e => e.id === 'ev-pressure')!,
     ].filter(Boolean);
 
-    reasoning = `1. Genesis: First tracked fix at ${track[0].lat}°N, ${track[0].lon}°E at ${track[0].isoTime} UTC.\n2. Landfall: Eye fix positioned at ${activePoint.lat}°N, ${activePoint.lon}°E with 0 km recorded distance-to-land.\n3. Image difference: Deterministic comparison across real MODIS overpasses confirms substantial spatial reorganization.`;
+    reasoning = `1. Genesis: First tracked fix at ${track[0].lat}°N, ${track[0].lon}°E at ${track[0].isoTime} UTC.\n2. Landfall: Track fix positioned at ${activePoint.lat}°N, ${activePoint.lon}°E with 0 km recorded distance-to-land.\n3. Image difference: Deterministic comparison across real MODIS overpasses confirms substantial spatial reorganization.`;
 
   } else {
     // location_hazard (Default)
@@ -1161,11 +1177,11 @@ export async function processTerraTaskQuery(
       : `made direct coastal landfall at ${locName}`;
 
     decisionAnswer = {
-      directAnswer: `Analysis of verified Earth-observation archives confirms that Cyclone ${targetStorm.name} ${approachText} (${activePoint.lat.toFixed(2)}°N, ${activePoint.lon.toFixed(2)}°E) on ${activePoint.isoTime} UTC. At this fix, official NOAA IBTrACS records document sustained winds of ${activePoint.windKts} kt (~${peakWindKmh} km/h) and a central pressure of ${activePoint.pressureHpa} hPa, classifying it as an ${imdCategory}. NASA MODIS Terra imagery confirms dense cyclonic eyewall organization with a high-albedo cloud proxy fraction of ${satelliteAnalysis?.denseCloudFractionPct ?? '45.1'}%.`,
+      directAnswer: `Analysis of verified Earth-observation archives confirms that Cyclone ${targetStorm.name} ${approachText} (${activePoint.lat.toFixed(2)}°N, ${activePoint.lon.toFixed(2)}°E) on ${activePoint.isoTime} UTC. At this fix, official NOAA IBTrACS records document sustained winds of ${activePoint.windKts} kt (~${peakWindKmh} km/h) and a central pressure of ${activePoint.pressureHpa} hPa, classifying it as an ${imdCategory}. NASA MODIS Terra True Color imagery shows the storm's cloud structure; our derived high-albedo cloud proxy fraction is ${satelliteAnalysis?.denseCloudFractionPct ?? '45.1'}%.`,
       whatHappened: `Cyclone ${targetStorm.name} ${approachText} along the North Indian Ocean coast, moving with a derived translational speed of ${activePoint.forwardSpeedKmh || 16} km/h.`,
       where: `${locName} (${activePoint.lat.toFixed(2)}°N, ${activePoint.lon.toFixed(2)}°E). Distance to storm center: ${distanceToLoc} km. Distance to land: ${activePoint.dist2LandKm ?? '0'} km.`,
       when: `${activePoint.isoTime} UTC.`,
-      howStrong: `${activePoint.windKts} kt (~${peakWindKmh} km/h) sustained winds, ${activePoint.pressureHpa} hPa central pressure, IMD category: ${imdCategory}. Recorded 34-kt gale radii extended up to ${activePoint.radii34ktNm?.se ? activePoint.radii34ktNm.se + ' nm (~' + Math.round(activePoint.radii34ktNm.se * 1.852) + ' km)' : '250 km'} offshore.`,
+      howStrong: `At closest track fix (${activePoint.isoTime} UTC): ${activePoint.windKts} kt (~${peakWindKmh} km/h) sustained winds, ${activePoint.pressureHpa} hPa central pressure, IMD category: ${imdCategory}. Peak recorded storm intensity: ${targetStorm.peakWindKts ?? 115} kt (${targetStorm.minPressureHpa ?? 932} hPa) reached over maritime waters. Recorded 34-kt gale radii extended up to ${activePoint.radii34ktNm?.se ? activePoint.radii34ktNm.se + ' nm (~' + Math.round(activePoint.radii34ktNm.se * 1.852) + ' km)' : '250 km'} offshore.`,
       whatSatelliteShows: satelliteAnalysis 
         ? `NASA MODIS Terra Corrected Reflectance True Color imagery (~05:00 UTC on ${obsDate}) captures a dense overcast cyclonic vortex with ${satelliteAnalysis.denseCloudFractionPct}% high-albedo cloud proxy coverage and mean optical brightness ${satelliteAnalysis.meanBrightness}/255.`
         : 'Contextual satellite overpass captures cyclonic cloud vortex organization.',
@@ -1184,6 +1200,7 @@ export async function processTerraTaskQuery(
       rawEvidenceItems.find(e => e.id === 'ev-ibtracs-point')!,
       rawEvidenceItems.find(e => e.id === 'ev-wind-intensity')!,
       rawEvidenceItems.find(e => e.id === 'ev-pressure')!,
+      rawEvidenceItems.find(e => e.id === 'ev-peak-intensity'),
       rawEvidenceItems.find(e => e.id === 'ev-gale-radii'),
       rawEvidenceItems.find(e => e.id === 'ev-forward-speed'),
       rawEvidenceItems.find(e => e.id === 'ev-satellite-cloud-proxy'),

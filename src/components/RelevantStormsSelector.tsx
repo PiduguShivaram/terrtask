@@ -63,7 +63,7 @@ export const RelevantStormsSelector: React.FC<RelevantStormsSelectorProps> = ({
                 )}
               </div>
 
-              <div className="space-y-1 text-[11px] text-slate-300 font-mono">
+              <div className="space-y-1.5 text-[11px] text-slate-300 font-mono">
                 <div className="flex items-center gap-1.5 text-slate-400">
                   <Compass className="w-3 h-3 text-cyan-400 shrink-0" />
                   <span>
@@ -71,20 +71,25 @@ export const RelevantStormsSelector: React.FC<RelevantStormsSelectorProps> = ({
                   </span>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1">
-                    <Wind className="w-3 h-3 text-sky-400 shrink-0" />
-                    <span>{match.peakWindKts ? `${match.peakWindKts} kt` : '—'}</span>
+                <div className="p-1.5 rounded-lg bg-earth-900/70 border border-earth-800 space-y-0.5">
+                  <div className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">
+                    Peak Recorded Intensity
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Gauge className="w-3 h-3 text-amber-400 shrink-0" />
-                    <span>{match.minPressureHpa ? `${match.minPressureHpa} hPa` : '—'}</span>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1">
+                      <Wind className="w-3 h-3 text-sky-400 shrink-0" />
+                      <span className="font-semibold text-white">{match.peakWindKts ? `${match.peakWindKts} kt` : '—'}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Gauge className="w-3 h-3 text-amber-400 shrink-0" />
+                      <span className="font-semibold text-white">{match.minPressureHpa ? `${match.minPressureHpa} hPa` : '—'}</span>
+                    </div>
                   </div>
                 </div>
               </div>
 
               <div className="text-[10px] text-slate-500 font-sans truncate border-t border-earth-800/80 pt-1.5 w-full">
-                Fix: {match.closestFixTime.slice(0, 16)} UTC
+                Closest Track Fix: {match.closestFixTime.slice(0, 16)} UTC
               </div>
             </button>
           );

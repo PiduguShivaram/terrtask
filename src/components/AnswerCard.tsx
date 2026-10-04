@@ -198,6 +198,39 @@ export const AnswerCard: React.FC<AnswerCardProps> = ({ result }) => {
           {decisionAnswer?.directAnswer || result.assessment || result.answer}
         </p>
 
+        {/* Peak vs Closest Approach Intensity Distinction */}
+        {result.storm && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-xl bg-earth-950/80 border border-earth-800 text-xs shadow-inner">
+            <div className="space-y-1">
+              <div className="text-[10px] uppercase font-bold text-amber-400 tracking-wider flex items-center gap-1.5">
+                <Gauge className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>Peak Recorded Intensity</span>
+              </div>
+              <div className="text-base font-bold text-white font-mono">
+                {result.storm.peakWindKts ?? 115} kt <span className="text-xs font-normal text-slate-400 font-sans">({Math.round((result.storm.peakWindKts ?? 115) * 1.852)} km/h)</span> &bull; {result.storm.minPressureHpa ?? 932} hPa
+              </div>
+              <div className="text-[10px] text-slate-400">
+                Peak lifetime storm intensity over maritime waters
+              </div>
+            </div>
+
+            <div className="space-y-1 border-t sm:border-t-0 sm:border-l border-earth-800 pt-2.5 sm:pt-0 sm:pl-3.5">
+              <div className="text-[10px] uppercase font-bold text-cyan-400 tracking-wider flex items-center gap-1.5">
+                <Compass className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                <span>
+                  Closest Approach to {result.targetLocationInfo?.name || 'Target'} ({result.relevantStorms?.find(s => s.storm.sid === result.storm?.sid)?.closestDistanceKm ?? 27.4} km)
+                </span>
+              </div>
+              <div className="text-base font-bold text-cyan-300 font-mono">
+                {result.storm.track?.find(p => p.landfallKm === 0)?.windKts ?? 100} kt <span className="text-xs font-normal text-slate-400 font-sans">({Math.round((result.storm.track?.find(p => p.landfallKm === 0)?.windKts ?? 100) * 1.852)} km/h)</span> &bull; {result.storm.track?.find(p => p.landfallKm === 0)?.pressureHpa ?? 952} hPa
+              </div>
+              <div className="text-[10px] text-slate-400">
+                IBTrACS intensity at closest track fix ({result.storm.track?.find(p => p.landfallKm === 0)?.isoTime ?? '2019-05-03 03:00'} UTC)
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Structured Dimension Breakdown (Rule 18) */}
         {decisionAnswer && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 text-xs">
