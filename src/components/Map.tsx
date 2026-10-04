@@ -25,7 +25,7 @@ export const Map: React.FC<MapProps> = ({
   const layersRef = useRef<Record<string, any>>({});
   const trackLayersRef = useRef<any[]>([]);
 
-  const [activeBaseLayer, setActiveBaseLayer] = useState<'dark' | 'satellite' | 'osm'>('dark');
+  const [activeBaseLayer, setActiveBaseLayer] = useState<'osm' | 'satellite'>('osm');
   const [showRadii, setShowRadii] = useState(true);
   const [mapReady, setMapReady] = useState(false);
 
@@ -52,16 +52,15 @@ export const Map: React.FC<MapProps> = ({
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
       L.control.attribution({ position: 'bottomleft', prefix: false })
-        .addAttribution('&copy; <a href="https://carto.com" target="_blank" class="text-cyan-400">CARTO</a> &bull; <a href="https://earthdata.nasa.gov" target="_blank" class="text-cyan-400">NASA GIBS</a> &bull; NOAA IBTrACS &bull; OpenStreetMap')
+        .addAttribution('&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" class="text-cyan-400">OpenStreetMap</a> contributors &bull; <a href="https://earthdata.nasa.gov" target="_blank" class="text-cyan-400">NASA GIBS</a> &bull; NOAA IBTrACS')
         .addTo(map);
 
-      // 1. Dark CartoDB Layer (default high-contrast dark geographic context)
-      const darkLayer = L.tileLayer(
-        'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+      // 1. OpenStreetMap Layer (default reliable open basemap with full labels & coastlines)
+      const osmLayer = L.tileLayer(
+        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
         {
           maxZoom: 19,
-          subdomains: 'abcd',
-          attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+          attribution: '&copy; OpenStreetMap contributors',
         }
       );
 
@@ -74,23 +73,13 @@ export const Map: React.FC<MapProps> = ({
         }
       );
 
-      // 3. OpenStreetMap
-      const osmLayer = L.tileLayer(
-        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        {
-          maxZoom: 19,
-          attribution: '&copy; OpenStreetMap contributors',
-        }
-      );
-
       layersRef.current = {
-        dark: darkLayer,
-        satellite: gibsLayer,
         osm: osmLayer,
+        satellite: gibsLayer,
       };
 
-      // Add default basemap
-      darkLayer.addTo(map);
+      // Add default OpenStreetMap basemap
+      osmLayer.addTo(map);
 
       mapInstanceRef.current = map;
       setMapReady(true);
@@ -148,10 +137,8 @@ export const Map: React.FC<MapProps> = ({
         );
         layersRef.current.satellite = gibsLayer;
         gibsLayer.addTo(map);
-      } else if (activeBaseLayer === 'osm') {
-        layersRef.current.osm?.addTo(map);
       } else {
-        layersRef.current.dark?.addTo(map);
+        layersRef.current.osm?.addTo(map);
       }
       map.invalidateSize();
     });
@@ -294,7 +281,7 @@ export const Map: React.FC<MapProps> = ({
           }).addTo(map);
 
           radiusCircle.bindTooltip(
-            `<span class="text-xs font-sans">Observed 34-kt Gale Radius: ~${Math.round(avgRadiusNm)} nm (~${Math.round(avgRadiusNm * 1.852)} km)</span>`
+            `<span class="text-xs font-sans">Observed 34-kt Gale Radius (IBTrACS): ~${Math.round(avgRadiusNm)} nm (~${Math.round(avgRadiusNm * 1.852)} km)</span>`
           );
 
           trackLayersRef.current.push(radiusCircle);
@@ -313,15 +300,15 @@ export const Map: React.FC<MapProps> = ({
         <div className="flex items-center gap-1 p-1 bg-earth-900/90 backdrop-blur-md rounded-xl border border-earth-700/80 shadow-xl">
           <button
             type="button"
-            onClick={() => setActiveBaseLayer('dark')}
+            onClick={() => setActiveBaseLayer('osm')}
             className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
-              activeBaseLayer === 'dark'
+              activeBaseLayer === 'osm'
                 ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/20'
                 : 'text-slate-300 hover:text-white hover:bg-earth-800'
             }`}
           >
-            <Layers className="w-3.5 h-3.5" />
-            <span>Dark Carto</span>
+            <Compass className="w-3.5 h-3.5" />
+            <span>OpenStreetMap</span>
           </button>
 
           <button
@@ -335,19 +322,6 @@ export const Map: React.FC<MapProps> = ({
           >
             <Eye className="w-3.5 h-3.5" />
             <span>NASA Satellite</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveBaseLayer('osm')}
-            className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
-              activeBaseLayer === 'osm'
-                ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/20'
-                : 'text-slate-300 hover:text-white hover:bg-earth-800'
-            }`}
-          >
-            <Compass className="w-3.5 h-3.5" />
-            <span>OSM</span>
           </button>
         </div>
 
@@ -402,7 +376,7 @@ export const Map: React.FC<MapProps> = ({
         </div>
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-amber-400 border border-dashed border-amber-300" />
-          <span>34-kt Gale Radii Field</span>
+          <span>34-kt Gale Radii Field (IBTrACS)</span>
         </div>
       </div>
     </div>
