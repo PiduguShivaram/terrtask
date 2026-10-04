@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Globe, Radio, Database, ShieldCheck, Waves } from 'lucide-react';
+import { Globe, Database, ShieldCheck, Waves, Satellite } from 'lucide-react';
 
 export const TerraAskHeader: React.FC = () => {
   return (
@@ -25,29 +25,29 @@ export const TerraAskHeader: React.FC = () => {
           </div>
         </div>
 
-        {/* Live Data Connection Indicators */}
+        {/* Verified Data Sources */}
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-earth-900/90 border border-earth-800 text-slate-300">
-            <Radio className="w-3.5 h-3.5 text-emerald-400" />
+            <Database className="w-3.5 h-3.5 text-emerald-400" />
             <span className="text-slate-400">NOAA IBTrACS:</span>
-            <span className="font-mono text-emerald-400 font-medium">v04r01 Verified</span>
+            <span className="font-mono text-emerald-300 font-medium">v04r01 (WMO Record)</span>
           </div>
 
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-earth-900/90 border border-earth-800 text-slate-300">
-            <Database className="w-3.5 h-3.5 text-cyan-400" />
+            <Satellite className="w-3.5 h-3.5 text-cyan-400" />
             <span className="text-slate-400">NASA GIBS:</span>
-            <span className="font-mono text-cyan-400 font-medium">MODIS Terra</span>
+            <span className="font-mono text-cyan-300 font-medium">MODIS Terra (True Color)</span>
           </div>
 
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-earth-900/90 border border-earth-800 text-slate-300">
             <Waves className="w-3.5 h-3.5 text-indigo-400" />
             <span className="text-slate-400">ECMWF ERA5:</span>
-            <span className="font-mono text-indigo-400 font-medium">0.25° Reanalysis</span>
+            <span className="font-mono text-indigo-300 font-medium">0.25° Reanalysis</span>
           </div>
 
           <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-300">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="font-medium text-[11px]">Zero Synthetic Data</span>
+            <span className="font-medium text-[11px]">Zero Fabricated Data</span>
           </div>
         </div>
       </div>

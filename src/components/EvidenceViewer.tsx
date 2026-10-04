@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CycloneEvent, HourlyMetric, TrackPoint } from '@/lib/types';
-import { Satellite, BarChart3, Table, ExternalLink, ShieldCheck } from 'lucide-react';
+import { CycloneEvent, HourlyMetric } from '@/lib/types';
+import { Satellite, BarChart3, Table, ExternalLink, ShieldCheck, Info } from 'lucide-react';
 
 interface EvidenceViewerProps {
   storm: CycloneEvent | null;
@@ -22,6 +22,7 @@ export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
   onSelectPoint,
 }) => {
   const [activeTab, setActiveTab] = useState<'satellite' | 'chart' | 'table'>('satellite');
+  const [imageError, setImageError] = useState(false);
 
   if (!storm) return null;
 
@@ -47,7 +48,7 @@ export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
             }`}
           >
             <Satellite className="w-3.5 h-3.5" />
-            <span>NASA Satellite Snapshot</span>
+            <span>NASA Satellite Observation</span>
           </button>
 
           <button
@@ -60,7 +61,7 @@ export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
             }`}
           >
             <BarChart3 className="w-3.5 h-3.5" />
-            <span>ERA5 Barometric Drop</span>
+            <span>ERA5 Reanalysis Context</span>
           </button>
 
           <button
@@ -83,51 +84,82 @@ export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
         </div>
       </div>
 
-      {/* Tab 1: Real NASA Satellite Snapshot */}
+      {/* Tab 1: Real NASA Satellite Snapshot (Rule 8: Honestly Described) */}
       {activeTab === 'satellite' && (
         <div className="space-y-3">
           <div className="relative rounded-xl overflow-hidden border border-earth-800 bg-earth-950 aspect-video flex items-center justify-center">
-            {/* Real NASA GIBS live image */}
-            <img
-              src={snapshotUrl}
-              alt={`NASA MODIS Terra Satellite Overpass on ${satelliteDate}`}
-              className="w-full h-full object-cover"
-              loading="lazy"
-            />
+            {imageError ? (
+              <div className="p-8 text-center space-y-2">
+                <Satellite className="w-8 h-8 text-slate-500 mx-auto" />
+                <div className="text-xs font-bold text-slate-300">
+                  Satellite imagery unavailable for this timestamp.
+                </div>
+                <div className="text-[11px] text-slate-500 font-mono">
+                  NASA EOSDIS GIBS returned no reflectance tile for {satelliteDate}
+                </div>
+              </div>
+            ) : (
+              <img
+                src={snapshotUrl}
+                alt={`NASA MODIS Terra True-Color Satellite Overpass on ${satelliteDate}`}
+                className="w-full h-full object-cover"
+                loading="lazy"
+                onError={() => setImageError(true)}
+              />
+            )}
 
-            <div className="absolute bottom-3 left-3 px-3 py-1.5 rounded-lg bg-earth-950/80 backdrop-blur-md border border-earth-800 text-[11px] text-slate-300">
-              NASA MODIS Terra Corrected Reflectance &bull; <span className="font-mono text-cyan-300">{satelliteDate}</span>
-            </div>
+            {!imageError && (
+              <>
+                <div className="absolute bottom-3 left-3 px-3 py-1.5 rounded-lg bg-earth-950/85 backdrop-blur-md border border-earth-800 text-[11px] text-slate-300 space-y-0.5">
+                  <div className="font-semibold text-white">
+                    NASA Terra &bull; MODIS Corrected Reflectance (True Color)
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-mono">
+                    Acquisition Date: <span className="text-cyan-300 font-bold">{satelliteDate}</span> &bull; 10:30 AM Local Overpass
+                  </div>
+                </div>
 
-            <a
-              href={`https://worldview.earthdata.nasa.gov/?v=${minLon},${minLat},${maxLon},${maxLat}&t=${satelliteDate}`}
-              target="_blank"
-              rel="noreferrer"
-              className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-earth-950/80 backdrop-blur-md hover:bg-cyan-600 border border-earth-800 text-[11px] text-white font-medium flex items-center gap-1 transition-all"
-            >
-              <span>Explore in NASA Worldview</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
+                <a
+                  href={`https://worldview.earthdata.nasa.gov/?v=${minLon},${minLat},${maxLon},${maxLat}&t=${satelliteDate}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-earth-950/85 backdrop-blur-md hover:bg-cyan-600 border border-earth-800 text-[11px] text-white font-medium flex items-center gap-1 transition-all"
+                >
+                  <span>Inspect in NASA Worldview</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </>
+            )}
           </div>
 
-          <p className="text-xs text-slate-400 leading-relaxed">
-            NASA EOSDIS Global Imagery Browse Services (GIBS) true-color composite acquired by the Moderate Resolution Imaging Spectroradiometer (MODIS) instrument aboard NASA's Terra satellite. Shows cloud organization and eye development.
-          </p>
+          <div className="p-3 rounded-lg bg-earth-950/60 border border-earth-800 flex items-start gap-2 text-[11px] text-slate-400 leading-relaxed">
+            <Info className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+            <div>
+              <strong className="text-slate-300">Scientific Context (Rule 8):</strong> This calibrated true-color composite from NASA's Terra satellite provides visual observational evidence of cloud spiral organization, eye formation, and coastal proximity. TerraAsk does NOT perform automated wind speed measurements on RGB imagery.
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Tab 2: ECMWF ERA5 Barometric Drop & Wind Profile */}
+      {/* Tab 2: ECMWF ERA5 Model Reanalysis Context (Rule 9: Reanalysis, Not Direct Station Sensor) */}
       {activeTab === 'chart' && (
         <div className="space-y-3">
+          <div className="p-3 rounded-lg bg-earth-950/60 border border-earth-800 flex items-start gap-2 text-[11px] text-slate-400 leading-relaxed">
+            <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <strong className="text-amber-300">Model-Based Reanalysis Notice (Rule 9):</strong> ERA5 is a 0.25° gridded (~28 km) atmospheric reanalysis model assimilating global weather data. It is displayed as regional atmospheric context and must NOT be confused with direct eye-wall station barometers or anemometer readings.
+            </div>
+          </div>
+
           {hourlyData && hourlyData.length > 0 ? (
             <div className="p-4 rounded-xl bg-earth-950 border border-earth-800">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h4 className="text-xs font-bold text-white uppercase tracking-wider">
-                    Surface Pressure &amp; Sustained Wind Profile
+                    Model-Based Surface Pressure &amp; 10m Wind Curve
                   </h4>
                   <p className="text-[11px] text-slate-400">
-                    Station: {stationName || 'Coastal Sector'} &bull; ECMWF ERA5 0.25° Reanalysis
+                    Grid Location: {stationName || 'Coastal Landfall Sector'} &bull; ECMWF ERA5 0.25° Gridded Output
                   </p>
                 </div>
 
@@ -138,7 +170,7 @@ export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
                   </div>
                   <div className="flex items-center gap-1.5 text-cyan-400">
                     <span className="w-3 h-0.5 bg-cyan-400 rounded-full" />
-                    <span>Wind (km/h)</span>
+                    <span>10m Wind (km/h)</span>
                   </div>
                 </div>
               </div>
@@ -194,7 +226,7 @@ export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
                         Min: {Math.min(...pressures)} hPa
                       </text>
                       <text x={width - padding} y={padding - 8} textAnchor="end" fill="#06b6d4" fontSize="10" fontFamily="monospace">
-                        Peak Wind: {Math.max(...winds)} km/h
+                        Max Wind: {Math.max(...winds)} km/h
                       </text>
                     </svg>
                   );
@@ -209,18 +241,18 @@ export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
         </div>
       )}
 
-      {/* Tab 3: Raw NOAA Best-Track Observations */}
+      {/* Tab 3: Raw NOAA Best-Track Observations (Auditable Table) */}
       {activeTab === 'table' && (
         <div className="space-y-2">
           <div className="max-h-72 overflow-y-auto rounded-xl border border-earth-800 bg-earth-950">
             <table className="w-full text-left text-xs text-slate-300">
               <thead className="bg-earth-900/90 text-slate-400 font-mono uppercase text-[10px] sticky top-0 border-b border-earth-800">
                 <tr>
-                  <th className="py-2.5 px-3">UTC Timestamp</th>
-                  <th className="py-2.5 px-3">Position</th>
-                  <th className="py-2.5 px-3">Wind (kts)</th>
-                  <th className="py-2.5 px-3">Pressure (hPa)</th>
-                  <th className="py-2.5 px-3">Speed (km/h)</th>
+                  <th className="py-2.5 px-3">ISO_TIME (UTC)</th>
+                  <th className="py-2.5 px-3">Coordinates (LAT, LON)</th>
+                  <th className="py-2.5 px-3">WMO_WIND (kt)</th>
+                  <th className="py-2.5 px-3">WMO_PRES (mb)</th>
+                  <th className="py-2.5 px-3">Derived Speed</th>
                   <th className="py-2.5 px-3">Status</th>
                 </tr>
               </thead>
@@ -243,14 +275,14 @@ export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
                       </td>
                       <td className="py-2 px-3">{pt.windKts ?? '—'}</td>
                       <td className="py-2 px-3">{pt.pressureHpa ?? '—'}</td>
-                      <td className="py-2 px-3">{pt.forwardSpeedKmh ?? '—'}</td>
+                      <td className="py-2 px-3">{pt.forwardSpeedKmh ? `${pt.forwardSpeedKmh} km/h` : '—'}</td>
                       <td className="py-2 px-3 font-sans">
                         {pt.landfallKm === 0 ? (
                           <span className="px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-400 text-[10px] font-bold">
-                            Landfall
+                            Landfall Fix (0 km)
                           </span>
                         ) : (
-                          <span className="text-slate-500">{pt.intensityCategory || 'Active'}</span>
+                          <span className="text-slate-500">{pt.intensityCategory || 'Active Fix'}</span>
                         )}
                       </td>
                     </tr>
@@ -260,8 +292,8 @@ export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
             </table>
           </div>
           <div className="text-[10px] text-slate-400 flex items-center justify-between px-1">
-            <span>Click any observation row to synchronize the map and satellite view.</span>
-            <span>Total: {storm.track.length} verified NOAA track fixes</span>
+            <span>Source: NOAA NCEI IBTrACS v04r01 (ibtracs.NI.list.v04r01.csv)</span>
+            <span>Total: {storm.track.length} verified track fixes</span>
           </div>
         </div>
       )}

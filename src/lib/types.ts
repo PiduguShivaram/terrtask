@@ -1,4 +1,9 @@
-export type DataCategory = 'Observed' | 'Derived' | 'Model-based' | 'Unavailable';
+export type DataCategory = 
+  | 'Observed' 
+  | 'Derived' 
+  | 'Model-based' 
+  | 'Interpretation' 
+  | 'Unavailable';
 
 export interface Radii34kt {
   ne: number | null;
@@ -17,10 +22,11 @@ export interface TrackPoint {
   dist2LandKm: number | null;
   landfallKm: number | null;
   radii34ktNm?: Radii34kt | null;
-  // Derived metrics
+  // Deterministic derivations
   forwardSpeedKmh?: number | null;
   bearingDeg?: number | null;
   intensityCategory?: string;
+  derivationMethod?: string;
 }
 
 export interface CycloneEvent {
@@ -41,12 +47,23 @@ export interface EvidenceItem {
   id: string;
   category: DataCategory;
   label: string;
-  value: string | number;
-  unit?: string;
+  // Raw data from source
+  rawVariable?: string;
+  rawValue?: string | number | null;
+  rawUnit?: string;
+  // Display presentation
+  displayValue: string | number;
+  displayUnit?: string;
   source: string;
   dataset: string;
   timestamp?: string;
   coordinates?: [number, number];
+  processing: string;
+  derivationDetails?: {
+    formula?: string;
+    sourceVariables?: string[];
+    assumptions?: string;
+  };
   description: string;
   rawUrl?: string;
 }
@@ -54,8 +71,8 @@ export interface EvidenceItem {
 export interface ProvenanceRecord {
   source: string;
   dataset: string;
-  acquisitionTime?: string;
   observationTime?: string;
+  retrievalTime?: string;
   geographicCoverage: string;
   processingPerformed: string;
   modelOrAlgorithm?: string;
@@ -65,11 +82,7 @@ export interface ProvenanceRecord {
 export interface UncertaintyAssessment {
   hasQuantitativeUncertainty: boolean;
   statement: string;
-  metrics?: {
-    label: string;
-    value: string;
-    note: string;
-  }[];
+  limitations: string[];
 }
 
 export interface TimelinePhase {
@@ -92,7 +105,14 @@ export interface HourlyMetric {
 export interface TerraAskResult {
   query: string;
   intent: {
-    type: 'location_hazard' | 'cyclone_intensity' | 'temporal_evolution' | 'evidence_inspection' | 'general_status';
+    type: 
+      | 'location_hazard' 
+      | 'cyclone_intensity' 
+      | 'temporal_evolution' 
+      | 'evidence_inspection' 
+      | 'unsupported_forecast' 
+      | 'unsupported_damage' 
+      | 'unknown_or_unsupported';
     targetLocation?: string;
     targetStormName?: string;
     coordinates?: [number, number];
@@ -110,9 +130,13 @@ export interface TerraAskResult {
   satelliteLayerInfo: {
     layerId: string;
     layerName: string;
+    satellite: string;
+    instrument: string;
+    product: string;
     date: string;
     tileUrlTemplate: string;
     provider: string;
+    roleDescription: string;
   };
   errorState?: {
     isError: boolean;
