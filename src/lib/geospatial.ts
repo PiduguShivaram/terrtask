@@ -1,4 +1,4 @@
-import { TrackPoint } from './types';
+import { TrackPoint, ResolvedLocation } from './types';
 
 // Mean Earth radius in kilometers (WGS84 spherical approximation)
 const EARTH_RADIUS_KM = 6371.0;
@@ -110,58 +110,39 @@ export function enrichTrackPoints(points: TrackPoint[]): TrackPoint[] {
 
 /**
  * Authoritative Indian coastal reference coordinates for geospatial bounding.
+ * Source: Survey of India Official Administrative Atlas & Natural Earth Populated Places.
  */
-export const INDIAN_COASTAL_LOCATIONS: Record<
-  string,
-  { name: string; lat: number; lon: number; state: string; description: string }
-> = {
+export const INDIAN_COASTAL_LOCATIONS: Record<string, ResolvedLocation> = {
   puri: {
     name: 'Puri',
     lat: 19.8135,
     lon: 85.8312,
     state: 'Odisha',
+    source: 'Survey of India (Odisha Coast)',
     description: 'Coastal district in Odisha on the Bay of Bengal; direct landfall location of Cyclone Fani on May 3, 2019.',
-  },
-  bhubaneswar: {
-    name: 'Bhubaneswar',
-    lat: 20.2961,
-    lon: 85.8245,
-    state: 'Odisha',
-    description: 'Capital of Odisha, inland coastal plains (~55 km inland from Puri coast).',
   },
   paradip: {
     name: 'Paradip',
-    lat: 20.316,
-    lon: 86.611,
+    lat: 20.3160,
+    lon: 86.6110,
     state: 'Odisha',
+    source: 'Survey of India / Paradip Port Authority',
     description: 'Major deepwater commercial port on Odisha coast; historic landfall area of 1999 Odisha Super Cyclone and Cyclone Dana (2024).',
-  },
-  gopalpur: {
-    name: 'Gopalpur',
-    lat: 19.26,
-    lon: 84.91,
-    state: 'Odisha',
-    description: 'Southern Odisha coastal port; direct landfall site of Cyclone Phailin (October 2013).',
   },
   visakhapatnam: {
     name: 'Visakhapatnam',
     lat: 17.6868,
     lon: 83.2185,
     state: 'Andhra Pradesh',
-    description: 'Port city on northern Andhra coast; direct landfall site of Cyclone Hudhud (October 2014).',
-  },
-  machilipatnam: {
-    name: 'Machilipatnam',
-    lat: 16.18,
-    lon: 81.13,
-    state: 'Andhra Pradesh',
-    description: 'Vulnerable low-lying delta coast in Krishna district, Andhra Pradesh.',
+    source: 'Survey of India (Andhra Pradesh Coast)',
+    description: 'Major industrial port city on northern Andhra coast; direct landfall site of Cyclone Hudhud (October 2014).',
   },
   chennai: {
     name: 'Chennai',
     lat: 13.0827,
     lon: 80.2707,
     state: 'Tamil Nadu',
+    source: 'Survey of India (Tamil Nadu Coast)',
     description: 'Major metropolitan coast on southern Bay of Bengal; impacted by Cyclone Vardah (2016) and Cyclone Michaung (2023).',
   },
   kolkata: {
@@ -169,13 +150,97 @@ export const INDIAN_COASTAL_LOCATIONS: Record<
     lat: 22.5726,
     lon: 88.3639,
     state: 'West Bengal',
+    source: 'Survey of India (West Bengal Ganges Delta)',
     description: 'Ganges delta region; impacted by Cyclone Amphan (May 2020) and Cyclone Remal (May 2024).',
+  },
+  bhubaneswar: {
+    name: 'Bhubaneswar',
+    lat: 20.2961,
+    lon: 85.8245,
+    state: 'Odisha',
+    source: 'Survey of India (Odisha Capital Region)',
+    description: 'Capital of Odisha, inland coastal plains (~55 km inland from Puri coast).',
   },
   digha: {
     name: 'Digha',
     lat: 21.6266,
     lon: 87.5074,
     state: 'West Bengal',
-    description: 'Coastal sea resort on West Bengal coast near Odisha border.',
+    source: 'Survey of India (West Bengal Coast)',
+    description: 'Coastal sea resort on West Bengal coast near Odisha border; landfall vicinity of Cyclone Yaas (2021).',
+  },
+  gopalpur: {
+    name: 'Gopalpur',
+    lat: 19.2600,
+    lon: 84.9100,
+    state: 'Odisha',
+    source: 'Survey of India (Southern Odisha Coast)',
+    description: 'Southern Odisha coastal port; direct landfall site of Cyclone Phailin (October 2013).',
+  },
+  kakinada: {
+    name: 'Kakinada',
+    lat: 16.9891,
+    lon: 82.2475,
+    state: 'Andhra Pradesh',
+    source: 'Survey of India (Godavari Delta Coast)',
+    description: 'Godavari delta port city; landfall zone of Cyclone Phethai (2018).',
+  },
+  machilipatnam: {
+    name: 'Machilipatnam',
+    lat: 16.1800,
+    lon: 81.1300,
+    state: 'Andhra Pradesh',
+    source: 'Survey of India (Krishna Delta Coast)',
+    description: 'Vulnerable low-lying delta coast in Krishna district, Andhra Pradesh; historic surge disaster site.',
+  },
+  balasore: {
+    name: 'Balasore',
+    lat: 21.4934,
+    lon: 86.9135,
+    state: 'Odisha',
+    source: 'Survey of India (Northern Odisha Coast)',
+    description: 'Northern Odisha coastal district on the Bay of Bengal.',
+  },
+  dhamra: {
+    name: 'Dhamra',
+    lat: 20.7944,
+    lon: 86.9600,
+    state: 'Odisha',
+    source: 'Survey of India (Bhadrak Coast)',
+    description: 'Dhamra port on Bhadrak coast; direct landfall zone of Cyclone Dana (October 2024).',
   },
 };
+
+/**
+ * Resolves natural-language query to an authoritative coastal geographic location.
+ * Returns null if no recognized location is referenced.
+ */
+export function resolveLocation(query: string): ResolvedLocation | null {
+  const norm = query.toLowerCase();
+
+  // 1. Direct location key check
+  for (const [key, loc] of Object.entries(INDIAN_COASTAL_LOCATIONS)) {
+    if (norm.includes(key) || norm.includes(loc.name.toLowerCase())) {
+      return loc;
+    }
+  }
+
+  // 2. Specific regional keywords
+  if (norm.includes('odisha') || norm.includes('orissa')) {
+    return INDIAN_COASTAL_LOCATIONS.puri;
+  }
+  if (norm.includes('andhra')) {
+    return INDIAN_COASTAL_LOCATIONS.visakhapatnam;
+  }
+  if (norm.includes('tamil nadu')) {
+    return INDIAN_COASTAL_LOCATIONS.chennai;
+  }
+  if (norm.includes('bengal') || norm.includes('sunderbans') || norm.includes('sundarbans')) {
+    return INDIAN_COASTAL_LOCATIONS.kolkata;
+  }
+  if (norm.includes('east coast') || norm.includes('bay of bengal')) {
+    return INDIAN_COASTAL_LOCATIONS.puri; // benchmark
+  }
+
+  return null;
+}

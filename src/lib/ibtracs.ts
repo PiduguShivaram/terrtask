@@ -1,5 +1,5 @@
 import modernStorms from '../data/ibtracs_ni_modern.json';
-import { CycloneEvent, TrackPoint } from './types';
+import { CycloneEvent, TrackPoint, RelevantStormMatch } from './types';
 import { calculateHaversineDistanceKm, enrichTrackPoints } from './geospatial';
 
 const rawStorms: CycloneEvent[] = (modernStorms as any[]).map(s => {
@@ -53,15 +53,15 @@ export function findStormByNameOrSid(nameOrSid: string): CycloneEvent | undefine
 }
 
 /**
- * Finds storms that approached within a given radius of coordinates.
- * Returns storms sorted by closest distance to the target coordinate.
+ * Searches real IBTrACS tracks for cyclones that approached within radiusKm of coordinates.
+ * Ranks storms by closest approach distance (km).
  */
 export function findStormsNearLocation(
   lat: number,
   lon: number,
   radiusKm = 250
-): { storm: CycloneEvent; closestPoint: TrackPoint; minDistanceKm: number }[] {
-  const results: { storm: CycloneEvent; closestPoint: TrackPoint; minDistanceKm: number }[] = [];
+): RelevantStormMatch[] {
+  const results: RelevantStormMatch[] = [];
 
   for (const storm of rawStorms) {
     let minDistanceKm = Infinity;
@@ -78,12 +78,20 @@ export function findStormsNearLocation(
     if (closestPoint && minDistanceKm <= radiusKm) {
       results.push({
         storm,
+        closestDistanceKm: Math.round(minDistanceKm * 10) / 10,
+        closestFixTime: closestPoint.isoTime,
         closestPoint,
-        minDistanceKm: Math.round(minDistanceKm * 10) / 10,
+        peakWindKts: storm.peakWindKts ?? null,
+        minPressureHpa: storm.minPressureHpa ?? null,
       });
     }
   }
 
-  // Sort by closest approach
-  return results.sort((a, b) => a.minDistanceKm - b.minDistanceKm);
+  // Rank by proximity, then by wind intensity
+  return results.sort((a, b) => {
+    if (Math.abs(a.closestDistanceKm - b.closestDistanceKm) > 25) {
+      return a.closestDistanceKm - b.closestDistanceKm;
+    }
+    return (b.peakWindKts || 0) - (a.peakWindKts || 0);
+  });
 }

@@ -43,6 +43,24 @@ export interface CycloneEvent {
   endDate?: string;
 }
 
+export interface RelevantStormMatch {
+  storm: CycloneEvent;
+  closestDistanceKm: number;
+  closestFixTime: string;
+  closestPoint: TrackPoint;
+  peakWindKts: number | null;
+  minPressureHpa: number | null;
+}
+
+export interface TemporalSynchronization {
+  trackTimestamp: string;
+  satelliteTimestamp: string;
+  satelliteOffsetHours: number;
+  reanalysisTimestamp?: string;
+  reanalysisOffsetHours?: number;
+  synchronizationNote: string;
+}
+
 export interface EvidenceItem {
   id: string;
   category: DataCategory;
@@ -64,6 +82,7 @@ export interface EvidenceItem {
     sourceVariables?: string[];
     assumptions?: string;
   };
+  limitations?: string;
   description: string;
   rawUrl?: string;
 }
@@ -102,6 +121,15 @@ export interface HourlyMetric {
   precipitationMm?: number;
 }
 
+export interface ResolvedLocation {
+  name: string;
+  lat: number;
+  lon: number;
+  state: string;
+  source: string;
+  description: string;
+}
+
 export interface TerraAskResult {
   query: string;
   intent: {
@@ -110,20 +138,33 @@ export interface TerraAskResult {
       | 'cyclone_intensity' 
       | 'temporal_evolution' 
       | 'evidence_inspection' 
+      | 'satellite_intensity_request'
       | 'unsupported_forecast' 
       | 'unsupported_damage' 
       | 'unknown_or_unsupported';
     targetLocation?: string;
     targetStormName?: string;
     coordinates?: [number, number];
+    requestedOperation?: string;
   };
-  answer: string;
+  // Answer Structure
+  assessment: string;
+  answer: string; // compatibility
+  derivedAnalysis?: string;
+  limitations?: string[];
   evidence: EvidenceItem[];
   reasoning: string;
   uncertainty: UncertaintyAssessment;
   provenance: ProvenanceRecord[];
+  
+  // Geospatial & Storm Context
   storm: CycloneEvent | null;
+  relevantStorms: RelevantStormMatch[];
   activePointIndex: number;
+  targetLocationInfo?: ResolvedLocation | null;
+  
+  // Synchronization & Imagery
+  temporalSync: TemporalSynchronization;
   timelinePhases: TimelinePhase[];
   hourlyEnvironmentalData?: HourlyMetric[] | null;
   environmentalStationName?: string;
@@ -138,6 +179,7 @@ export interface TerraAskResult {
     provider: string;
     roleDescription: string;
   };
+  
   errorState?: {
     isError: boolean;
     reason: string;

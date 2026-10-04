@@ -2,11 +2,12 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import 'leaflet/dist/leaflet.css';
-import { CycloneEvent, TrackPoint } from '@/lib/types';
-import { Layers, Eye, Compass, Info } from 'lucide-react';
+import { CycloneEvent, ResolvedLocation } from '@/lib/types';
+import { Layers, Eye, Compass, Info, MapPin } from 'lucide-react';
 
 interface MapProps {
   storm: CycloneEvent | null;
+  targetLocation?: ResolvedLocation | null;
   activePointIndex: number;
   onSelectPoint: (index: number) => void;
   satelliteDate: string;
@@ -14,6 +15,7 @@ interface MapProps {
 
 export const Map: React.FC<MapProps> = ({
   storm,
+  targetLocation,
   activePointIndex,
   onSelectPoint,
   satelliteDate,
@@ -35,9 +37,12 @@ export const Map: React.FC<MapProps> = ({
     import('leaflet').then((L) => {
       if (!isMounted || !mapContainerRef.current) return;
 
-      // Default view over Bay of Bengal and India's East Coast
+      const defaultCenter: [number, number] = targetLocation 
+        ? [targetLocation.lat, targetLocation.lon]
+        : [19.8, 85.8];
+
       const map = L.map(mapContainerRef.current, {
-        center: [18.5, 86.0],
+        center: defaultCenter,
         zoom: 6,
         zoomControl: false,
         attributionControl: false,
@@ -45,7 +50,6 @@ export const Map: React.FC<MapProps> = ({
 
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-      // Attribution
       L.control.attribution({ position: 'bottomleft', prefix: false })
         .addAttribution('&copy; <a href="https://earthdata.nasa.gov" target="_blank" class="text-cyan-400">NASA GIBS</a> &bull; NOAA IBTrACS &bull; OpenStreetMap')
         .addTo(map);
@@ -82,9 +86,7 @@ export const Map: React.FC<MapProps> = ({
         osm: osmLayer,
       };
 
-      // Add default layer
       gibsLayer.addTo(map);
-
       mapInstanceRef.current = map;
     });
 
@@ -103,7 +105,6 @@ export const Map: React.FC<MapProps> = ({
     if (!map) return;
 
     import('leaflet').then((L) => {
-      // Remove all base layers
       Object.values(layersRef.current).forEach((layer) => {
         if (map.hasLayer(layer)) {
           map.removeLayer(layer);
@@ -128,37 +129,70 @@ export const Map: React.FC<MapProps> = ({
     });
   }, [activeBaseLayer, satelliteDate]);
 
-  // Render Cyclone Track, Points, Landfall, and Wind Radii
+  // Render Target Location Pin, Track, Landfall, and Wind Radii
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map || !storm || !storm.track || storm.track.length === 0) return;
 
     import('leaflet').then((L) => {
-      // Clear previous track layers
+      // Clear previous layers
       trackLayersRef.current.forEach((layer) => map.removeLayer(layer));
       trackLayersRef.current = [];
 
       const points = storm.track;
       const latLngs = points.map((p) => [p.lat, p.lon] as [number, number]);
 
-      // 1. Draw Polyline colored by intensity
+      // 1. Draw Polyline
       const trackPolyline = L.polyline(latLngs, {
         color: '#06b6d4',
         weight: 3.5,
         opacity: 0.85,
-        dashArray: undefined,
       }).addTo(map);
       trackLayersRef.current.push(trackPolyline);
 
-      // Fit bounds to track
-      map.fitBounds(trackPolyline.getBounds(), { padding: [50, 50] });
+      // Collect bounds to include track + target location
+      const bounds = L.latLngBounds(latLngs);
 
-      // 2. Add Track Points
+      // 2. Add Target Location Pin (if resolved from query)
+      if (targetLocation) {
+        bounds.extend([targetLocation.lat, targetLocation.lon]);
+
+        const targetIcon = L.divIcon({
+          html: `
+            <div class="relative flex items-center justify-center">
+              <span class="animate-ping absolute inline-flex h-8 w-8 rounded-full bg-emerald-400 opacity-60"></span>
+              <div class="w-6 h-6 rounded-full bg-emerald-500 border-2 border-white shadow-xl flex items-center justify-center text-white text-[10px] font-bold">
+                📍
+              </div>
+            </div>
+          `,
+          className: 'custom-target-marker',
+          iconSize: [32, 32],
+          iconAnchor: [16, 16],
+        });
+
+        const targetMarker = L.marker([targetLocation.lat, targetLocation.lon], { icon: targetIcon }).addTo(map);
+        targetMarker.bindTooltip(
+          `
+          <div class="text-xs font-sans p-1">
+            <div class="font-bold text-emerald-300">${targetLocation.name} (${targetLocation.state})</div>
+            <div class="text-slate-300 text-[11px]">${targetLocation.description}</div>
+            <div class="text-[10px] text-slate-400 mt-0.5">Source: ${targetLocation.source}</div>
+          </div>
+          `,
+          { direction: 'top', offset: [0, -12] }
+        );
+        trackLayersRef.current.push(targetMarker);
+      }
+
+      // Smoothly fit bounds
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 8 });
+
+      // 3. Add Track Points
       points.forEach((p, idx) => {
         const isActive = idx === activePointIndex;
         const isLandfall = p.landfallKm === 0;
 
-        // Custom HTML Marker
         let markerHtml = '';
         if (isActive) {
           markerHtml = `
@@ -175,7 +209,6 @@ export const Map: React.FC<MapProps> = ({
             </div>
           `;
         } else {
-          // Color based on wind speed
           let pointColor = '#38bdf8';
           if ((p.windKts || 0) >= 90) pointColor = '#fb923c';
           if ((p.windKts || 0) >= 115) pointColor = '#f43f5e';
@@ -202,9 +235,9 @@ export const Map: React.FC<MapProps> = ({
           `
           <div class="text-xs font-sans p-1">
             <div class="font-bold text-slate-900">${storm.name} &bull; ${p.isoTime} UTC</div>
-            <div class="text-slate-700">Winds: <span class="font-semibold text-cyan-700">${p.windKts || '—'} kts</span> (${Math.round((p.windKts || 0) * 1.852)} km/h)</div>
+            <div class="text-slate-700">Winds: <span class="font-semibold text-cyan-700">${p.windKts || '—'} kt</span> (${Math.round((p.windKts || 0) * 1.852)} km/h)</div>
             <div class="text-slate-700">Pressure: <span class="font-semibold">${p.pressureHpa || '—'} hPa</span></div>
-            ${p.landfallKm === 0 ? '<div class="text-rose-600 font-bold mt-0.5">⚠️ Direct Landfall Fix</div>' : ''}
+            ${p.landfallKm === 0 ? '<div class="text-rose-600 font-bold mt-0.5">⚠️ Direct Landfall Fix (0 km)</div>' : ''}
             <div class="text-[10px] text-slate-500 mt-0.5">Click to inspect observation</div>
           </div>
           `,
@@ -214,11 +247,10 @@ export const Map: React.FC<MapProps> = ({
         trackLayersRef.current.push(marker);
       });
 
-      // 3. Draw 34-knot Gale Radius for Active Point
+      // 4. Draw 34-knot Gale Radius for Active Point
       const activePoint = points[activePointIndex];
       if (showRadii && activePoint && activePoint.radii34ktNm) {
         const r = activePoint.radii34ktNm;
-        // Average radius in meters (1 nm = 1852 meters)
         const validRadii = [r.ne, r.se, r.sw, r.nw].filter((v): v is number => v !== null && v > 0);
         if (validRadii.length > 0) {
           const avgRadiusNm = validRadii.reduce((a, b) => a + b, 0) / validRadii.length;
@@ -241,7 +273,7 @@ export const Map: React.FC<MapProps> = ({
         }
       }
     });
-  }, [storm, activePointIndex, showRadii]);
+  }, [storm, targetLocation, activePointIndex, showRadii]);
 
   return (
     <div className="relative w-full h-full min-h-[480px] lg:min-h-[580px] rounded-2xl overflow-hidden border border-earth-800 bg-earth-950 shadow-2xl">
@@ -305,12 +337,21 @@ export const Map: React.FC<MapProps> = ({
         </button>
       </div>
 
-      {/* Satellite Observation Date Badge */}
-      <div className="absolute top-4 left-4 z-10 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-earth-900/90 backdrop-blur-md border border-earth-700/80 shadow-xl">
-        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-        <span className="text-xs text-slate-300 font-medium">
-          Observation Overpass: <span className="font-mono text-cyan-300 font-bold">{satelliteDate}</span>
-        </span>
+      {/* Target Location / Observation Overpass Badge */}
+      <div className="absolute top-4 left-4 z-10 flex flex-col gap-1.5">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-earth-900/90 backdrop-blur-md border border-earth-700/80 shadow-xl">
+          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+          <span className="text-xs text-slate-300 font-medium">
+            Overpass: <span className="font-mono text-cyan-300 font-bold">{satelliteDate}</span> (~05:00 UTC)
+          </span>
+        </div>
+
+        {targetLocation && (
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-950/80 backdrop-blur-md border border-emerald-500/40 shadow-lg text-[11px] text-emerald-300">
+            <MapPin className="w-3 h-3 text-emerald-400" />
+            <span>Target: <strong>{targetLocation.name}</strong> ({targetLocation.lat.toFixed(2)}°N, {targetLocation.lon.toFixed(2)}°E)</span>
+          </div>
+        )}
       </div>
 
       {/* Legend Card Bottom Right */}
@@ -321,15 +362,15 @@ export const Map: React.FC<MapProps> = ({
         </div>
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-          <span>Category 4/5 (&ge; 115 kts)</span>
+          <span>Category 4/5 (&ge; 115 kt)</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-orange-400" />
-          <span>Category 2/3 (90-114 kts)</span>
+          <span>Category 2/3 (90-114 kt)</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-sky-400" />
-          <span>Tropical Storm / Cat 1 (&lt; 90 kts)</span>
+          <span>Tropical Storm / Cat 1 (&lt; 90 kt)</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-amber-400 border border-dashed border-amber-300" />

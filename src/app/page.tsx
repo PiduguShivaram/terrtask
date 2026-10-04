@@ -7,12 +7,13 @@ import { NaturalLanguagePrompt } from '@/components/NaturalLanguagePrompt';
 import { AnswerCard } from '@/components/AnswerCard';
 import { TimelineControl } from '@/components/TimelineControl';
 import { EvidenceViewer } from '@/components/EvidenceViewer';
+import { RelevantStormsSelector } from '@/components/RelevantStormsSelector';
 import { TruthfulState } from '@/components/TruthfulState';
 import { TerraAskResult } from '@/lib/types';
 import { extractDateString } from '@/lib/gibs';
-import { Loader2, ShieldCheck, Database, Compass, Layers, AlertCircle } from 'lucide-react';
+import { Loader2, Compass, AlertCircle } from 'lucide-react';
 
-// Dynamic import for Leaflet Map to avoid SSR window issues
+// Dynamic import for Leaflet Map
 const Map = dynamic(() => import('@/components/Map').then((m) => m.Map), {
   ssr: false,
   loading: () => (
@@ -31,7 +32,7 @@ export default function TerraAskHome() {
   const [apiError, setApiError] = useState<string | null>(null);
 
   // Execute query against Earth-Observation API
-  const handleQuery = async (queryText: string) => {
+  const handleQuery = async (queryText: string, stormSid?: string) => {
     setIsLoading(true);
     setApiError(null);
     setCurrentQuery(queryText);
@@ -40,7 +41,7 @@ export default function TerraAskHome() {
       const res = await fetch('/api/query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: queryText }),
+        body: JSON.stringify({ query: queryText, stormSid }),
       });
 
       if (!res.ok) {
@@ -88,7 +89,7 @@ export default function TerraAskHome() {
 
           <NaturalLanguagePrompt
             currentQuery={currentQuery}
-            onSearch={handleQuery}
+            onSearch={(q) => handleQuery(q)}
             isLoading={isLoading}
           />
         </section>
@@ -131,6 +132,16 @@ export default function TerraAskHome() {
           </div>
         )}
 
+        {/* Multi-Storm Discovery Selector (Section 7) */}
+        {result && !result.errorState?.isError && result.relevantStorms && result.relevantStorms.length > 1 && (
+          <RelevantStormsSelector
+            storms={result.relevantStorms}
+            selectedSid={result.storm?.sid || ''}
+            onSelectStorm={(sid) => handleQuery(currentQuery, sid)}
+            locationName={result.targetLocationInfo?.name}
+          />
+        )}
+
         {/* Primary Dashboard Interface */}
         {result && !result.errorState?.isError && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -152,6 +163,7 @@ export default function TerraAskHome() {
 
                 <Map
                   storm={result.storm}
+                  targetLocation={result.targetLocationInfo}
                   activePointIndex={activePointIndex}
                   onSelectPoint={setActivePointIndex}
                   satelliteDate={satelliteDate}

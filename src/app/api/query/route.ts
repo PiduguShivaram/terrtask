@@ -5,6 +5,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const query = body?.query;
+    const stormSid = body?.stormSid;
 
     if (!query || typeof query !== 'string' || query.trim().length === 0) {
       return NextResponse.json(
@@ -13,7 +14,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const result = await processTerraAskQuery(query.trim());
+    const result = await processTerraAskQuery(query.trim(), stormSid);
     return NextResponse.json(result);
   } catch (error) {
     console.error('API query processing error:', error);

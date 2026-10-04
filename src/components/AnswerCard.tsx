@@ -11,8 +11,10 @@ import {
   Activity,
   Layers,
   Calculator,
-  Compass,
-  Database
+  Clock,
+  MapPin,
+  Calendar,
+  AlertTriangle
 } from 'lucide-react';
 
 interface AnswerCardProps {
@@ -61,38 +63,59 @@ export const AnswerCard: React.FC<AnswerCardProps> = ({ result }) => {
 
   return (
     <div className="space-y-6">
-      {/* 1. ANSWER SECTION */}
-      <div className="p-6 rounded-2xl bg-earth-900/90 border border-earth-700/80 shadow-2xl relative overflow-hidden">
+      {/* 1. ASSESSMENT (One concise paragraph) */}
+      <div className="p-6 rounded-2xl bg-earth-900/90 border border-earth-700/80 shadow-2xl relative overflow-hidden space-y-3">
         <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
         
-        <div className="flex items-center justify-between gap-2 mb-3">
+        <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-cyan-400" />
             <h2 className="text-xs uppercase tracking-widest font-bold text-cyan-400">
-              Earth-Observation Assessment
+              Assessment
             </h2>
           </div>
-          <span className="text-[11px] font-mono text-slate-400">
-            {result.intent.targetStormName ? `Target: Cyclone ${result.intent.targetStormName}` : 'Regional Climate Analysis'}
-          </span>
+          {result.storm && (
+            <span className="text-[11px] font-mono text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/80">
+              Cyclone {result.storm.name} ({result.storm.season})
+            </span>
+          )}
         </div>
 
         <p className="text-base lg:text-lg text-slate-100 font-medium leading-relaxed">
-          {result.answer}
+          {result.assessment || result.answer}
         </p>
+
+        {/* Temporal Synchronization Strip (Section 11) */}
+        {result.temporalSync && (
+          <div className="pt-2 border-t border-earth-800 text-[11px] text-slate-400 flex flex-col gap-1 font-mono">
+            <div className="flex items-center gap-2 text-slate-300">
+              <Clock className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+              <span>
+                Track Fix: <strong className="text-white">{result.temporalSync.trackTimestamp}</strong>
+              </span>
+              <span className="text-slate-600">&bull;</span>
+              <span>
+                Terra Overpass: <strong className="text-cyan-300">{result.temporalSync.satelliteTimestamp}</strong>
+              </span>
+            </div>
+            <div className="text-[10px] text-slate-400 italic font-sans pl-5">
+              {result.temporalSync.synchronizationNote}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* 2. SCIENTIFIC EVIDENCE SECTION WITH AUDITABLE LINEAGE */}
+      {/* 2. EVIDENCE CARDS (What, Source, When, Where, Type, Processing, Limitations) */}
       <div className="p-6 rounded-2xl bg-earth-900/80 border border-earth-800 shadow-xl space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Activity className="w-4 h-4 text-emerald-400" />
             <h3 className="text-xs uppercase tracking-widest font-bold text-slate-300">
-              Verified Observational Evidence
+              Observational Evidence Bundle
             </h3>
           </div>
           <span className="text-xs text-slate-400 font-mono">
-            {result.evidence.length} traceable records
+            {result.evidence.length} validated items
           </span>
         </div>
 
@@ -104,6 +127,7 @@ export const AnswerCard: React.FC<AnswerCardProps> = ({ result }) => {
                 key={ev.id}
                 className="p-4 rounded-xl bg-earth-950/80 border border-earth-800 hover:border-earth-700 transition-all space-y-2.5"
               >
+                {/* Header: What & Category Type */}
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <span className="text-xs font-semibold text-slate-200">{ev.label}</span>
@@ -118,22 +142,38 @@ export const AnswerCard: React.FC<AnswerCardProps> = ({ result }) => {
                   {ev.description}
                 </p>
 
-                {/* Provenance Micro-Bar */}
-                <div className="pt-2 border-t border-earth-800/80 flex items-center justify-between text-[11px] text-slate-500">
-                  <span className="truncate pr-2 font-medium text-slate-400">{ev.source}</span>
-                  <button
-                    type="button"
-                    onClick={() => setExpandedEvidenceId(isExpanded ? null : ev.id)}
-                    className="text-cyan-400 hover:text-cyan-300 font-medium flex items-center gap-1 shrink-0 transition-colors"
-                  >
-                    <span>{isExpanded ? 'Hide Traceability' : 'Audit Origin'}</span>
-                    {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                  </button>
+                {/* Structured Metadata Strip: When, Where, Source */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-earth-800/80 text-[11px] text-slate-400 font-mono">
+                  {ev.timestamp && (
+                    <div className="flex items-center gap-1.5 truncate">
+                      <Calendar className="w-3 h-3 text-cyan-400 shrink-0" />
+                      <span className="truncate">{ev.timestamp}</span>
+                    </div>
+                  )}
+                  {ev.coordinates && (
+                    <div className="flex items-center gap-1.5 truncate">
+                      <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
+                      <span>{ev.coordinates[0].toFixed(2)}°N, {ev.coordinates[1].toFixed(2)}°E</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-end sm:justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedEvidenceId(isExpanded ? null : ev.id)}
+                      className="text-cyan-400 hover:text-cyan-300 font-medium flex items-center gap-1 shrink-0 font-sans transition-colors"
+                    >
+                      <span>{isExpanded ? 'Hide Details' : 'Inspect Lineage'}</span>
+                      {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                    </button>
+                  </div>
                 </div>
 
-                {/* Expandable Traceable Origin Audit */}
+                {/* Detailed Lineage: Processing & Limitations */}
                 {isExpanded && (
                   <div className="mt-2.5 p-3 rounded-lg bg-earth-900/90 border border-earth-800 text-[11px] text-slate-300 space-y-1.5 font-mono">
+                    <div>
+                      <span className="text-slate-400">Source Provider:</span> <span className="text-slate-200">{ev.source}</span>
+                    </div>
                     {ev.rawVariable && (
                       <div>
                         <span className="text-slate-400">Raw Variable:</span> <span className="text-cyan-300">{ev.rawVariable}</span>
@@ -141,36 +181,31 @@ export const AnswerCard: React.FC<AnswerCardProps> = ({ result }) => {
                     )}
                     {ev.rawValue !== undefined && (
                       <div>
-                        <span className="text-slate-400">Raw Value:</span> <span className="text-white font-bold">{String(ev.rawValue)} {ev.rawUnit || ''}</span>
+                        <span className="text-slate-400">Raw Recorded Value:</span> <span className="text-white font-bold">{String(ev.rawValue)} {ev.rawUnit || ''}</span>
                       </div>
                     )}
                     <div>
-                      <span className="text-slate-400">Processing:</span> <span className="text-slate-200">{ev.processing}</span>
+                      <span className="text-slate-400">Processing Method:</span> <span className="text-slate-200">{ev.processing}</span>
                     </div>
                     {ev.derivationDetails?.formula && (
                       <div className="text-emerald-300">
-                        <span className="text-slate-400">Formula:</span> {ev.derivationDetails.formula}
+                        <span className="text-slate-400">Derivation Formula:</span> {ev.derivationDetails.formula}
                       </div>
                     )}
-                    {ev.derivationDetails?.assumptions && (
-                      <div className="text-slate-400">
-                        <span>Assumptions:</span> {ev.derivationDetails.assumptions}
-                      </div>
-                    )}
-                    {ev.timestamp && (
-                      <div>
-                        <span className="text-slate-400">Timestamp:</span> <span className="text-cyan-400">{ev.timestamp} UTC</span>
+                    {ev.limitations && (
+                      <div className="text-amber-300/90 font-sans pt-1">
+                        <span className="font-semibold text-amber-400">Limitation:</span> {ev.limitations}
                       </div>
                     )}
                     {ev.rawUrl && (
-                      <div className="pt-1">
+                      <div className="pt-1.5">
                         <a
                           href={ev.rawUrl}
                           target="_blank"
                           rel="noreferrer"
                           className="text-cyan-400 hover:underline flex items-center gap-1 font-sans text-[11px]"
                         >
-                          <span>Inspect Original NOAA File</span>
+                          <span>Open Direct Dataset Portal</span>
                           <ExternalLink className="w-3 h-3" />
                         </a>
                       </div>
@@ -183,26 +218,28 @@ export const AnswerCard: React.FC<AnswerCardProps> = ({ result }) => {
         </div>
       </div>
 
-      {/* 3. REASONING SECTION */}
-      <div className="p-6 rounded-2xl bg-earth-900/80 border border-earth-800 shadow-xl space-y-3">
-        <div className="flex items-center gap-2">
-          <FileText className="w-4 h-4 text-cyan-400" />
-          <h3 className="text-xs uppercase tracking-widest font-bold text-slate-300">
-            Auditable Physical Reasoning
-          </h3>
-        </div>
+      {/* 3. DERIVED ANALYSIS (Only if calculations exist) */}
+      {result.derivedAnalysis && (
+        <div className="p-6 rounded-2xl bg-earth-900/80 border border-earth-800 shadow-xl space-y-3">
+          <div className="flex items-center gap-2">
+            <Calculator className="w-4 h-4 text-emerald-400" />
+            <h3 className="text-xs uppercase tracking-widest font-bold text-slate-300">
+              Derived Geospatial Analysis
+            </h3>
+          </div>
 
-        <div className="text-xs lg:text-sm text-slate-300 leading-relaxed whitespace-pre-line bg-earth-950/60 p-4 rounded-xl border border-earth-800 font-sans">
-          {result.reasoning}
+          <div className="text-xs text-slate-300 leading-relaxed bg-earth-950/60 p-4 rounded-xl border border-earth-800 font-sans">
+            {result.derivedAnalysis}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* 4. CONFIDENCE & UNCERTAINTY SECTION (Phase 2 Rule 5: Zero Fabricated ± Intervals) */}
+      {/* 4. LIMITATIONS & HONEST UNCERTAINTY */}
       <div className="p-6 rounded-2xl bg-earth-900/80 border border-earth-800 shadow-xl space-y-3">
         <div className="flex items-center gap-2">
           <ShieldAlert className="w-4 h-4 text-amber-400" />
           <h3 className="text-xs uppercase tracking-widest font-bold text-slate-300">
-            Confidence &amp; Observational Uncertainty
+            Observational Limitations &amp; Uncertainty
           </h3>
         </div>
 
@@ -212,28 +249,23 @@ export const AnswerCard: React.FC<AnswerCardProps> = ({ result }) => {
             <span>{result.uncertainty.statement}</span>
           </div>
 
-          <div className="space-y-1.5 pt-2 border-t border-amber-500/20 text-slate-300">
-            <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider block">
-              Documented Observational Limitations:
-            </span>
-            <ul className="list-disc pl-4 space-y-1 text-[11px] text-slate-300">
-              {result.uncertainty.limitations.map((lim, idx) => (
-                <li key={idx} className="leading-relaxed">
-                  {lim}
-                </li>
-              ))}
-            </ul>
-          </div>
+          <ul className="list-disc pl-4 space-y-1 text-[11px] text-slate-300">
+            {result.uncertainty.limitations.map((lim, idx) => (
+              <li key={idx} className="leading-relaxed">
+                {lim}
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
 
-      {/* 5. PROVENANCE & DATA REPRODUCIBILITY */}
+      {/* 5. SOURCES (Clickable Provenance Lineage) */}
       <div className="p-6 rounded-2xl bg-earth-900/80 border border-earth-800 shadow-xl space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Layers className="w-4 h-4 text-indigo-400" />
             <h3 className="text-xs uppercase tracking-widest font-bold text-slate-300">
-              Authoritative Provenance &amp; Lineage
+              Authoritative Provenance Lineage
             </h3>
           </div>
           <button
@@ -265,7 +297,7 @@ export const AnswerCard: React.FC<AnswerCardProps> = ({ result }) => {
                 </a>
               </div>
               <div className="text-slate-400 text-[11px]">
-                <strong className="text-slate-300">Agency:</strong> {prov.source}
+                <strong className="text-slate-300">Provider:</strong> {prov.source}
               </div>
               <div className="text-slate-400 text-[11px]">
                 <strong className="text-slate-300">Coverage:</strong> {prov.geographicCoverage}
@@ -275,7 +307,7 @@ export const AnswerCard: React.FC<AnswerCardProps> = ({ result }) => {
               </div>
               {prov.observationTime && (
                 <div className="text-slate-400 text-[11px]">
-                  <strong className="text-slate-300">Observation Time:</strong> <span className="font-mono text-cyan-400">{prov.observationTime}</span>
+                  <strong className="text-slate-300">Timestamp:</strong> <span className="font-mono text-cyan-400">{prov.observationTime}</span>
                 </div>
               )}
             </div>
